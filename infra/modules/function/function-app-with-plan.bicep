@@ -241,6 +241,7 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
     privateEndpoints: !empty(privateEndpointSubnetResourceId)
       ? [
           {
+            tags: {}
             subnetResourceId: privateEndpointSubnetResourceId
             service: 'sites'
             privateDnsZoneGroup: {
