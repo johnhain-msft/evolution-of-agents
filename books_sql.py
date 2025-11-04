@@ -44,33 +44,36 @@ class BooksSql:
         return df
 
     def _serialize_rows(self, df: pd.DataFrame, limit: int = 5) -> List[dict]:
+        """Serialize DataFrame rows to JSON-friendly dict format with dynamic column handling."""
         rows = []
-        for _, r in df.head(limit).iterrows():
-            rows.append(
-                {
-                    "Id": int(r.get("Id")) if not pd.isna(r.get("Id")) else None,
-                    "Name": str(r.get("Name"))[:200],
-                    "Authors": str(r.get("Authors"))[:120],
-                    "Rating": (
-                        float(r.get("Rating")) if not pd.isna(r.get("Rating")) else None
-                    ),
-                    "Pages": (
-                        int(r.get("pagesNumber"))
-                        if not pd.isna(r.get("pagesNumber"))
-                        else None
-                    ),
-                    "Year": (
-                        int(r.get("PublishYear"))
-                        if not pd.isna(r.get("PublishYear"))
-                        else None
-                    ),
-                    "Reviews": (
-                        int(r.get("CountsOfReview"))
-                        if not pd.isna(r.get("CountsOfReview"))
-                        else None
-                    ),
-                }
-            )
+        for _, row in df.head(limit).iterrows():
+            serialized_row = {}
+            for col in df.columns:
+                value = row[col]
+                
+                # Handle different data types appropriately
+                if pd.isna(value):
+                    serialized_row[col] = None
+                elif isinstance(value, (int, float)) and pd.isna(value):
+                    serialized_row[col] = None
+                elif isinstance(value, str):
+                    # Truncate long strings to keep context manageable
+                    serialized_row[col] = str(value)[:200]
+                elif isinstance(value, (int, float)):
+                    # Convert numpy types to native Python types
+                    if pd.isna(value):
+                        serialized_row[col] = None
+                    else:
+                        serialized_row[col] = float(value) if isinstance(value, float) else int(value)
+                elif isinstance(value, bool):
+                    serialized_row[col] = bool(value)
+                elif hasattr(value, 'isoformat'):  # datetime objects
+                    serialized_row[col] = value.isoformat()
+                else:
+                    # Fallback: convert to string and truncate
+                    serialized_row[col] = str(value)[:200]
+            
+            rows.append(serialized_row)
         return rows
 
     @kernel_function(

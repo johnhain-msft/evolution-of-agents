@@ -84,8 +84,7 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = if 
     publicNetworkAccess: publicNetworkAccess
     networkAcls: {
       bypass: 'AzureServices'
-
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
       ipRules: empty(myIpAddress)
         ? []
         : [

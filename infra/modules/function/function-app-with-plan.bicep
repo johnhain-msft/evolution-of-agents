@@ -202,7 +202,8 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
     name: '${name}-${resourceToken}'
     serverFarmResourceId: serverfarmForLogicApps.id
     managedIdentities: { userAssignedResourceIds: [managedIdentityId] }
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
+
     virtualNetworkSubnetResourceId: logicAppsSubnetResourceId
     outboundVnetRouting: {
       allTraffic: true
@@ -214,30 +215,64 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
       }
     ]
     httpsOnly: true
-    configs: [
-      {
-        name: 'appsettings'
-        properties: {
-          FUNCTIONS_EXTENSION_VERSION: '~4'
-          FUNCTIONS_WORKER_RUNTIME: 'dotnet'
-          APP_KIND: 'workflowApp'
-          // https://review.learn.microsoft.com/en-us/azure/logic-apps/create-single-tenant-workflows-azure-portal?branch=main&branchFallbackFrom=pr-en-us-279972#set-up-managed-identity-access-to-your-storage-account
-          AZURE_CLIENT_ID: identity.properties.clientId
-          AzureWebJobsStorage__credential: 'managedIdentity'
-          AzureWebJobsStorage__credentialType: 'managedIdentity'
-          AzureWebJobsStorage__managedIdentityResourceId: managedIdentityId
-          AzureWebJobsStorage__clientId: identity.properties.clientId
-          AzureWebJobsStorage__accountName: storageAccount.outputs.name
-          AzureWebJobsSecretStorageType: 'files'
-          WEBSITE_NODE_DEFAULT_VERSION: '~22'
-          AzureFunctionsJobHost__extensionBundle__id: 'Microsoft.Azure.Functions.ExtensionBundle.Workflows'
-          AzureFunctionsJobHost__extensionBundle__version: '[1.*, 2.0.0)'
+    configs: union(
+      [
+        {
+          name: 'appsettings'
+          properties: {
+            FUNCTIONS_EXTENSION_VERSION: '~4'
+            FUNCTIONS_WORKER_RUNTIME: 'dotnet'
+            APP_KIND: 'workflowApp'
+            // https://review.learn.microsoft.com/en-us/azure/logic-apps/create-single-tenant-workflows-azure-portal?branch=main&branchFallbackFrom=pr-en-us-279972#set-up-managed-identity-access-to-your-storage-account
+            AZURE_CLIENT_ID: identity.properties.clientId
+            AzureWebJobsStorage__credential: 'managedIdentity'
+            AzureWebJobsStorage__credentialType: 'managedIdentity'
+            AzureWebJobsStorage__managedIdentityResourceId: managedIdentityId
+            AzureWebJobsStorage__clientId: identity.properties.clientId
+            AzureWebJobsStorage__accountName: storageAccount.outputs.name
+            AzureWebJobsSecretStorageType: 'files'
+            WEBSITE_NODE_DEFAULT_VERSION: '~22'
+            AzureFunctionsJobHost__extensionBundle__id: 'Microsoft.Azure.Functions.ExtensionBundle.Workflows'
+            AzureFunctionsJobHost__extensionBundle__version: '[1.*, 2.0.0)'
+          }
+          storageAccountResourceId: storageAccount.outputs.resourceId
+          storageAccountUseIdentityAuthentication: true
+          applicationInsightResourceId: applicationInsightResourceId
         }
-        storageAccountResourceId: storageAccount.outputs.resourceId
-        storageAccountUseIdentityAuthentication: true
-        applicationInsightResourceId: applicationInsightResourceId
-      }
-    ]
+      ],
+      empty(myIpAddress)
+        ? []
+        : [
+            {
+              name: 'web'
+              properties: {
+                ipSecurityRestrictions: [
+                  {
+                    action: 'Allow'
+                    description: 'Allow My IP Address'
+                    ipAddress: '${myIpAddress}/32'
+                    name: 'My IP Address'
+                    priority: 100
+                  }
+                ]
+                ipSecurityRestrictionsDefaultAction: 'Deny'
+                scmIpSecurityRestrictionsDefaultAction: 'Deny'
+                // scmIpSecurityRestrictionsUseMain: true
+                scmIpSecurityRestrictions: empty(myIpAddress)
+                  ? []
+                  : [
+                      {
+                        action: 'Allow'
+                        description: 'Allow My IP Address'
+                        ipAddress: '${myIpAddress}/32'
+                        name: 'My IP Address'
+                        priority: 100
+                      }
+                    ]
+              }
+            }
+          ]
+    )
     privateEndpoints: !empty(privateEndpointSubnetResourceId)
       ? [
           {

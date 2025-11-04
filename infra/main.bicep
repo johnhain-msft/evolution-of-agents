@@ -68,6 +68,7 @@ module foundry './modules/ai/ai-foundry.bicep' = {
     appInsightsName: logAnalytics.outputs.applicationInsightsName
     publicNetworkAccess: 'Enabled'
     agentSubnetId: vnet.outputs.agentSubnetId // Use the first agent subnet
+    myIpAddress: myIpAddress
     deployments: [
       {
         name: 'gpt-35-turbo'
