@@ -207,3 +207,10 @@ marimo/_lsp/
 __marimo__/
 .local
 .azure
+
+# BMad Framework
+# BMad generates project documentation and management files
+.bmad-core/
+.bmad-infrastructure-devops/
+docs/
+.ai/
