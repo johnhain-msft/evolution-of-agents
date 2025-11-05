@@ -1,0 +1,62 @@
+schema: 1
+story: '1.1'
+story_title: 'Add Windows Setup Instructions to README - Brownfield Addition'
+gate: PASS
+status_reason: 'All remediation complete. Infrastructure deployment corrected to Bicep/azd. All 14 ACs satisfied with high-quality documentation.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-11-05T00:00:00Z'
+
+top_issues: []  # All previous issues resolved
+
+waiver:
+  active: false
+
+quality_score: 100  # 0 FAILs, 0 CONCERNS
+expires: '2025-11-19T00:00:00Z'  # 2 weeks from review
+
+evidence:
+  tests_reviewed: 0  # Documentation story, no automated tests required
+  risks_identified: 0  # All risks mitigated
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # All 14 ACs covered
+    ac_gaps: []  # No gaps
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No security concerns. Proper PowerShell execution policy guidance. Azure auth via azd.'
+  performance:
+    status: PASS
+    notes: 'N/A for documentation. Deployment time accurately documented (15-20 min).'
+  reliability:
+    status: PASS
+    notes: 'Previously FAIL - now PASS. Infrastructure deployment instructions corrected and functional.'
+  maintainability:
+    status: PASS
+    notes: 'Clear structure, well-organized, easy to update. Professional documentation quality.'
+
+recommendations:
+  immediate: []  # No blocking issues
+  future:
+    - action: 'Consider adding Windows 11 to automated testing environment if available'
+      refs: ['Testing Strategy']
+    - action: 'Monitor for Windows-specific issues after deployment'
+      refs: ['README.md Windows Setup']
+
+previous_review:
+  date: '2025-11-05'
+  gate: FAIL
+  issue_id: 'INFRA-001'
+  issue: 'Infrastructure provider mismatch (Terraform vs Bicep)'
+  resolution: 'Dev agent replaced all Terraform references with correct Bicep/azd deployment instructions'
+  verification: 'grep verification confirmed zero Terraform references in README.md'
+
+remediation_summary:
+  fixes_applied:
+    - 'Step 4: Replaced Terraform deployment with Bicep/azd (README.md:208-235)'
+    - 'Step 5: Changed terraform output to azd env get-values (README.md:245-250)'
+    - 'Prerequisites: Removed "via Terraform" reference (README.md:124)'
+  acs_resolved:
+    - 'AC4: Path conventions now correctly documented'
+    - 'AC11: Notebooks now functional with correct deployment method'
+  quality_improvement: 'Score: 45/100 → 100/100'
