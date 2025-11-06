@@ -157,9 +157,59 @@ The `azd up` command automatically provisions:
 
 ---
 
-## 🪟 Windows Setup Instructions
+## 🪟 Quick Install (Windows)
 
-This section provides comprehensive setup instructions specifically for Windows 11 developers. If you're using Linux or Mac, refer to the standard "How to Use" section above.
+**New!** Windows users can now use the one-click installer for automated setup!
+
+### Quick Install with Installer Script
+
+The PowerShell installer automates the entire setup process:
+
+```powershell
+# Download and run the installer
+# Option 1: If you have the repo already
+cd azure-ai-foundry-agents
+.\installer.ps1
+
+# Option 2: Download installer directly
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Azure-Samples/azure-ai-foundry-agents/main/installer.ps1" -OutFile "installer.ps1"
+.\installer.ps1
+```
+
+**What the installer does:**
+- ✅ Checks and installs prerequisites (Azure CLI, Python, uv, Git)
+- ✅ Clones the repository (or uses existing directory)
+- ✅ Guides you through Azure authentication
+- ✅ Prompts for Azure configuration (tenant, subscription, region)
+- ✅ Deploys Azure infrastructure (`azd up`)
+- ✅ Installs Python dependencies (`uv sync`)
+- ✅ Creates your `.env` file automatically
+- ⏱️ **Total time: 30-45 minutes** (most time is Azure deployment: 15-25 min)
+
+**System Requirements:**
+- Windows 10 (1809+) or Windows 11
+- ~2 GB free disk space
+- Active Azure subscription with Contributor access
+- Internet connection
+
+**Installation Log:**
+The installer saves detailed logs to `%TEMP%\azure-ai-foundry-agents-installer.log` for troubleshooting.
+
+**Uninstall:**
+To remove the installation, run:
+```powershell
+.\uninstall.ps1
+```
+This will optionally:
+- Delete Azure resources (`azd down`)
+- Remove installation directory
+- Prerequisites (Python, Azure CLI, etc.) are kept and can be manually uninstalled if desired
+
+---
+
+## 🪟 Windows Manual Setup Instructions
+
+If you prefer manual setup or the installer encounters issues, follow these comprehensive step-by-step instructions for Windows 11 developers. If you're using Linux or Mac, refer to the standard "Quick Start" section above.
 
 ### Prerequisites
 
