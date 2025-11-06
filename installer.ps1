@@ -451,10 +451,10 @@ function Show-PrerequisitesScreen {
             $txtProgress.Refresh()
 
             if (Install-Winget) {
-                $txtProgress.AppendText("✓ winget installed successfully`r`n")
+                $txtProgress.AppendText("[OK] winget installed successfully`r`n")
             }
             else {
-                $txtProgress.AppendText("✗ Failed to install winget. Manual installation required.`r`n")
+                $txtProgress.AppendText("[X] Failed to install winget. Manual installation required.`r`n")
                 $txtProgress.AppendText("https://aka.ms/getwinget`r`n")
             }
         }
@@ -474,10 +474,10 @@ function Show-PrerequisitesScreen {
                 }
 
                 if ($success) {
-                    $txtProgress.AppendText("✓ $key installed successfully`r`n")
+                    $txtProgress.AppendText("[OK] $key installed successfully`r`n")
                 }
                 else {
-                    $txtProgress.AppendText("✗ Failed to install $key`r`n")
+                    $txtProgress.AppendText("[X] Failed to install $key`r`n")
                     $link = Show-ManualInstallLinks $key
                     $txtProgress.AppendText("  Manual install: $link`r`n")
                 }
@@ -490,11 +490,11 @@ function Show-PrerequisitesScreen {
         $allInstalled = Update-PrerequisiteList
 
         if ($allInstalled) {
-            $txtProgress.AppendText("`r`n✓ All prerequisites installed!`r`n")
+            $txtProgress.AppendText("`r`n[OK] All prerequisites installed!`r`n")
             $btnNext.Enabled = $true
         }
         else {
-            $txtProgress.AppendText("`r`n⚠ Some prerequisites could not be installed automatically.`r`n")
+            $txtProgress.AppendText("`r`n[WARNING] Some prerequisites could not be installed automatically.`r`n")
             $txtProgress.AppendText("Please install them manually and restart the installer.`r`n")
         }
 
@@ -806,11 +806,11 @@ function Show-ProgressScreen {
         try {
             & $WorkScript
             & $Global:UpdateStatus "Installation complete!"
-            & $Global:AppendOutput "`r`n✓ Installation completed successfully!"
+            & $Global:AppendOutput "`r`n[OK] Installation completed successfully!"
         }
         catch {
             & $Global:UpdateStatus "Installation failed"
-            & $Global:AppendOutput "`r`n✗ Error: $_"
+            & $Global:AppendOutput "`r`n[X] Error: $_"
             Write-Log "Installation failed: $_" "ERROR"
         }
         finally {
@@ -837,11 +837,11 @@ function Show-CompletionScreen {
     # Title
     $lblTitle = New-Object System.Windows.Forms.Label
     if ($Success) {
-        $lblTitle.Text = "✓ Installation Completed Successfully!"
+        $lblTitle.Text = "[OK] Installation Completed Successfully!"
         $lblTitle.ForeColor = [System.Drawing.Color]::Green
     }
     else {
-        $lblTitle.Text = "✗ Installation Encountered Errors"
+        $lblTitle.Text = "[X] Installation Encountered Errors"
         $lblTitle.ForeColor = [System.Drawing.Color]::Red
     }
     $lblTitle.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
@@ -953,7 +953,7 @@ function Install-Repository {
             git pull 2>&1 | ForEach-Object { & $Global:AppendOutput $_ }
         }
         else {
-            & $Global:AppendOutput "⚠ Directory exists but is not a Git repository."
+            & $Global:AppendOutput "[WARNING] Directory exists but is not a Git repository."
             & $Global:AppendOutput "Using existing directory..."
         }
     }
@@ -967,11 +967,11 @@ function Install-Repository {
                 git clone $Global:Config.GitHubRepo $Global:Config.InstallDir 2>&1 | ForEach-Object {
                     & $Global:AppendOutput $_
                 }
-                & $Global:AppendOutput "✓ Repository cloned successfully"
+                & $Global:AppendOutput "[OK] Repository cloned successfully"
                 Write-Log "Repository cloned successfully"
             }
             catch {
-                & $Global:AppendOutput "✗ Git clone failed: $_"
+                & $Global:AppendOutput "[X] Git clone failed: $_"
                 Write-Log "Git clone failed: $_" "ERROR"
                 throw
             }
@@ -986,7 +986,7 @@ function Install-Repository {
 
             try {
                 Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-                & $Global:AppendOutput "✓ Downloaded ZIP archive"
+                & $Global:AppendOutput "[OK] Downloaded ZIP archive"
 
                 # Extract ZIP
                 & $Global:AppendOutput "Extracting archive..."
@@ -998,11 +998,11 @@ function Install-Repository {
 
                 Remove-Item -Path $zipPath -Force
 
-                & $Global:AppendOutput "✓ Repository extracted successfully"
+                & $Global:AppendOutput "[OK] Repository extracted successfully"
                 Write-Log "Repository extracted successfully"
             }
             catch {
-                & $Global:AppendOutput "✗ ZIP download failed: $_"
+                & $Global:AppendOutput "[X] ZIP download failed: $_"
                 Write-Log "ZIP download failed: $_" "ERROR"
                 throw
             }
@@ -1026,7 +1026,7 @@ function Invoke-AzureAuthentication {
         # Verify authentication
         $authStatus = azd auth login --check-status 2>&1
         if ($LASTEXITCODE -eq 0) {
-            & $Global:AppendOutput "✓ Azure authentication successful"
+            & $Global:AppendOutput "[OK] Azure authentication successful"
             Write-Log "Azure authentication successful"
         }
         else {
@@ -1034,7 +1034,7 @@ function Invoke-AzureAuthentication {
         }
     }
     catch {
-        & $Global:AppendOutput "✗ Azure authentication failed: $_"
+        & $Global:AppendOutput "[X] Azure authentication failed: $_"
         Write-Log "Azure authentication failed: $_" "ERROR"
         throw
     }
@@ -1059,11 +1059,11 @@ function Initialize-AzureEnvironment {
             azd env new $Global:Config.EnvironmentName 2>&1 | ForEach-Object { & $Global:AppendOutput $_ }
         }
 
-        & $Global:AppendOutput "✓ Azure environment initialized"
+        & $Global:AppendOutput "[OK] Azure environment initialized"
         Write-Log "Azure environment initialized"
     }
     catch {
-        & $Global:AppendOutput "✗ Environment initialization failed: $_"
+        & $Global:AppendOutput "[X] Environment initialization failed: $_"
         Write-Log "Environment initialization failed: $_" "ERROR"
         throw
     }
@@ -1094,11 +1094,11 @@ function Set-AzureEnvironment {
             azd env set AZURE_RESOURCE_GROUP $Global:Config.ResourceGroup
         }
 
-        & $Global:AppendOutput "✓ Azure environment configured"
+        & $Global:AppendOutput "[OK] Azure environment configured"
         Write-Log "Azure environment configured"
     }
     catch {
-        & $Global:AppendOutput "✗ Environment configuration failed: $_"
+        & $Global:AppendOutput "[X] Environment configuration failed: $_"
         Write-Log "Environment configuration failed: $_" "ERROR"
         throw
     }
@@ -1118,7 +1118,7 @@ function Invoke-InfrastructureDeployment {
         }
 
         if ($LASTEXITCODE -eq 0) {
-            & $Global:AppendOutput "✓ Infrastructure deployed successfully"
+            & $Global:AppendOutput "[OK] Infrastructure deployed successfully"
             Write-Log "Infrastructure deployment successful"
         }
         else {
@@ -1126,7 +1126,7 @@ function Invoke-InfrastructureDeployment {
         }
     }
     catch {
-        & $Global:AppendOutput "✗ Infrastructure deployment failed: $_"
+        & $Global:AppendOutput "[X] Infrastructure deployment failed: $_"
         Write-Log "Infrastructure deployment failed: $_" "ERROR"
         throw
     }
@@ -1144,7 +1144,7 @@ function Install-PythonEnvironment {
         }
 
         if ($LASTEXITCODE -eq 0) {
-            & $Global:AppendOutput "✓ Python environment set up successfully"
+            & $Global:AppendOutput "[OK] Python environment set up successfully"
             Write-Log "Python environment setup successful"
         }
         else {
@@ -1152,7 +1152,7 @@ function Install-PythonEnvironment {
         }
     }
     catch {
-        & $Global:AppendOutput "✗ Python environment setup failed: $_"
+        & $Global:AppendOutput "[X] Python environment setup failed: $_"
         Write-Log "Python environment setup failed: $_" "ERROR"
         throw
     }
@@ -1170,21 +1170,21 @@ function Test-Installation {
     $success = $true
 
     if (Test-Path $envFile) {
-        & $Global:AppendOutput "✓ .env file found"
+        & $Global:AppendOutput "[OK] .env file found"
         Write-Log ".env file verified"
     }
     else {
-        & $Global:AppendOutput "✗ .env file not found"
+        & $Global:AppendOutput "[X] .env file not found"
         Write-Log ".env file not found" "ERROR"
         $success = $false
     }
 
     if (Test-Path $venvDir) {
-        & $Global:AppendOutput "✓ Python virtual environment found"
+        & $Global:AppendOutput "[OK] Python virtual environment found"
         Write-Log "Virtual environment verified"
     }
     else {
-        & $Global:AppendOutput "✗ Python virtual environment not found"
+        & $Global:AppendOutput "[X] Python virtual environment not found"
         Write-Log "Virtual environment not found" "ERROR"
         $success = $false
     }

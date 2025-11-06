@@ -118,7 +118,7 @@ function Show-UninstallOptionsScreen {
     $yPos += 40
 
     $lblAzureWarning = New-Object System.Windows.Forms.Label
-    $lblAzureWarning.Text = "⚠ This will permanently delete all Azure resources created by the installer"
+    $lblAzureWarning.Text = "[WARNING] This will permanently delete all Azure resources created by the installer"
     $lblAzureWarning.ForeColor = [System.Drawing.Color]::Red
     $lblAzureWarning.Font = New-Object System.Drawing.Font("Segoe UI", 8)
     $lblAzureWarning.Location = New-Object System.Drawing.Point(80, $yPos)
@@ -302,11 +302,11 @@ function Show-ProgressScreen {
         try {
             & $WorkScript
             & $Global:UpdateStatus "Uninstall complete!"
-            & $Global:AppendOutput "`r`n✓ Uninstall completed successfully!"
+            & $Global:AppendOutput "`r`n[OK] Uninstall completed successfully!"
         }
         catch {
             & $Global:UpdateStatus "Uninstall failed"
-            & $Global:AppendOutput "`r`n✗ Error: $_"
+            & $Global:AppendOutput "`r`n[X] Error: $_"
             Write-Log "Uninstall failed: $_" "ERROR"
         }
         finally {
@@ -333,11 +333,11 @@ function Show-CompletionScreen {
     # Title
     $lblTitle = New-Object System.Windows.Forms.Label
     if ($Success) {
-        $lblTitle.Text = "✓ Uninstall Completed"
+        $lblTitle.Text = "[OK] Uninstall Completed"
         $lblTitle.ForeColor = [System.Drawing.Color]::Green
     }
     else {
-        $lblTitle.Text = "✗ Uninstall Encountered Errors"
+        $lblTitle.Text = "[X] Uninstall Encountered Errors"
         $lblTitle.ForeColor = [System.Drawing.Color]::Red
     }
     $lblTitle.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
@@ -401,7 +401,7 @@ function Remove-AzureResources {
     Write-Log "Removing Azure resources"
 
     if (-not (Test-Prerequisite "azd")) {
-        & $Global:AppendOutput "⚠ Azure Developer CLI (azd) not found. Cannot delete Azure resources."
+        & $Global:AppendOutput "[WARNING] Azure Developer CLI (azd) not found. Cannot delete Azure resources."
         Write-Log "azd not found, skipping Azure resource deletion" "WARNING"
         return $false
     }
@@ -420,18 +420,18 @@ function Remove-AzureResources {
         }
 
         if ($LASTEXITCODE -eq 0) {
-            & $Global:AppendOutput "✓ Azure resources deleted successfully"
+            & $Global:AppendOutput "[OK] Azure resources deleted successfully"
             Write-Log "Azure resources deleted successfully" "SUCCESS"
             return $true
         }
         else {
-            & $Global:AppendOutput "⚠ azd down completed with warnings"
+            & $Global:AppendOutput "[WARNING] azd down completed with warnings"
             Write-Log "azd down completed with warnings" "WARNING"
             return $true
         }
     }
     catch {
-        & $Global:AppendOutput "✗ Failed to delete Azure resources: $_"
+        & $Global:AppendOutput "[X] Failed to delete Azure resources: $_"
         Write-Log "Failed to delete Azure resources: $_" "ERROR"
         return $false
     }
@@ -453,12 +453,12 @@ function Remove-InstallDirectory {
 
     try {
         Remove-Item -Path $installDir -Recurse -Force
-        & $Global:AppendOutput "✓ Installation directory removed successfully"
+        & $Global:AppendOutput "[OK] Installation directory removed successfully"
         Write-Log "Installation directory removed successfully" "SUCCESS"
         return $true
     }
     catch {
-        & $Global:AppendOutput "✗ Failed to remove installation directory: $_"
+        & $Global:AppendOutput "[X] Failed to remove installation directory: $_"
         & $Global:AppendOutput "You may need to manually delete: $installDir"
         Write-Log "Failed to remove installation directory: $_" "ERROR"
         return $false
