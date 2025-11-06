@@ -826,6 +826,7 @@ function Show-ProgressScreen {
     $progressBar.Location = New-Object System.Drawing.Point(20, 60)
     $progressBar.Size = New-Object System.Drawing.Size(660, 30)
     $progressBar.Style = "Marquee"
+    $progressBar.MarqueeAnimationSpeed = 30  # Speed in milliseconds (lower = faster)
     $form.Controls.Add($progressBar)
 
     # Status label
