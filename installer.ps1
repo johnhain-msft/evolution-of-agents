@@ -373,6 +373,15 @@ function Show-PrerequisitesScreen {
     $form.FormBorderStyle = "FixedDialog"
     $form.MaximizeBox = $false
     $form.AutoScroll = $true
+
+    # Add mouse wheel scrolling support
+    $form.Add_MouseWheel({
+        param($sender, $e)
+        $currentScroll = $form.AutoScrollPosition
+        $newY = [Math]::Max(0, -$currentScroll.Y - ($e.Delta / 3))
+        $form.AutoScrollPosition = New-Object System.Drawing.Point(0, $newY)
+    })
+
     Write-Log "Prerequisites form created"
 
     # Title
