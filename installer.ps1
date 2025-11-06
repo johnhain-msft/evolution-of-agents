@@ -807,7 +807,11 @@ function Show-ProgressScreen {
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = "FixedDialog"
     $form.MaximizeBox = $false
-    $form.ControlBox = $false
+    $form.ControlBox = $true  # Allow X button to close
+
+    # Track cancellation state
+    $Global:CancellationRequested = $false
+    $Global:InstallationRunning = $false
 
     # Title
     $lblTitle = New-Object System.Windows.Forms.Label
@@ -841,6 +845,35 @@ function Show-ProgressScreen {
     $txtOutput.Font = New-Object System.Drawing.Font("Consolas", 9)
     $form.Controls.Add($txtOutput)
 
+    # Cancel button (always enabled during installation)
+    $btnCancel = New-Object System.Windows.Forms.Button
+    $btnCancel.Text = "Cancel"
+    $btnCancel.Size = New-Object System.Drawing.Size(100, 30)
+    $btnCancel.Location = New-Object System.Drawing.Point(470, 430)
+    $btnCancel.BackColor = [System.Drawing.Color]::LightCoral
+    $btnCancel.Add_Click({
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to cancel the installation?`n`nThis will stop all running deployment processes.",
+            "Cancel Installation",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+
+        if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+            $Global:CancellationRequested = $true
+            & $Global:AppendOutput "`r`n[CANCELLED] User requested cancellation..."
+            & $Global:UpdateStatus "Cancelling installation..."
+
+            # Kill any running azd processes
+            Get-Process -Name "azd" -ErrorAction SilentlyContinue | Stop-Process -Force
+            Write-Log "Installation cancelled by user" "WARNING"
+
+            $btnCancel.Enabled = $false
+            $btnClose.Enabled = $true
+        }
+    })
+    $form.Controls.Add($btnCancel)
+
     # Close button (initially disabled)
     $btnClose = New-Object System.Windows.Forms.Button
     $btnClose.Text = "Close"
@@ -849,6 +882,28 @@ function Show-ProgressScreen {
     $btnClose.Enabled = $false
     $btnClose.Add_Click({ $form.Close() })
     $form.Controls.Add($btnClose)
+
+    # Handle form closing
+    $form.Add_FormClosing({
+        param($sender, $e)
+        if ($Global:InstallationRunning -and -not $Global:CancellationRequested) {
+            $result = [System.Windows.Forms.MessageBox]::Show(
+                "Installation is still running. Are you sure you want to close?",
+                "Close Installer",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
+
+            if ($result -eq [System.Windows.Forms.DialogResult]::No) {
+                $e.Cancel = $true
+            }
+            else {
+                $Global:CancellationRequested = $true
+                Get-Process -Name "azd" -ErrorAction SilentlyContinue | Stop-Process -Force
+                Write-Log "Installation closed by user" "WARNING"
+            }
+        }
+    })
 
     # Create functions to update UI
     $Global:UpdateStatus = {
@@ -867,8 +922,10 @@ function Show-ProgressScreen {
 
     $Global:EnableClose = {
         $btnClose.Enabled = $true
+        $btnCancel.Enabled = $false
         $progressBar.Style = "Continuous"
         $progressBar.Value = 100
+        $Global:InstallationRunning = $false
     }
 
     # Execute work in background
@@ -876,15 +933,30 @@ function Show-ProgressScreen {
     $timer.Interval = 100
     $timer.Add_Tick({
         $timer.Stop()
+        $Global:InstallationRunning = $true
+
         try {
             & $WorkScript
-            & $Global:UpdateStatus "Installation complete!"
-            & $Global:AppendOutput "`r`n[OK] Installation completed successfully!"
+
+            if ($Global:CancellationRequested) {
+                & $Global:UpdateStatus "Installation cancelled"
+                & $Global:AppendOutput "`r`n[X] Installation was cancelled"
+            }
+            else {
+                & $Global:UpdateStatus "Installation complete!"
+                & $Global:AppendOutput "`r`n[OK] Installation completed successfully!"
+            }
         }
         catch {
-            & $Global:UpdateStatus "Installation failed"
-            & $Global:AppendOutput "`r`n[X] Error: $_"
-            Write-Log "Installation failed: $_" "ERROR"
+            if ($Global:CancellationRequested) {
+                & $Global:UpdateStatus "Installation cancelled"
+                & $Global:AppendOutput "`r`n[X] Installation was cancelled"
+            }
+            else {
+                & $Global:UpdateStatus "Installation failed"
+                & $Global:AppendOutput "`r`n[X] Error: $_"
+                Write-Log "Installation failed: $_" "ERROR"
+            }
         }
         finally {
             & $Global:EnableClose
@@ -1344,12 +1416,26 @@ function Start-Installation {
     Show-ProgressScreen -WorkScript {
         try {
             Install-Repository
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             Invoke-AzureAuthentication
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             Initialize-AzureEnvironment
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             Set-AzureEnvironment
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             New-AzureResourceGroup
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             Invoke-InfrastructureDeployment
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             Install-PythonEnvironment
+            if ($Global:CancellationRequested) { throw "Installation cancelled by user" }
+
             $Global:InstallSuccess = Test-Installation
 
             if ($Global:InstallSuccess) {
@@ -1360,7 +1446,9 @@ function Start-Installation {
             }
         }
         catch {
-            Write-Log "Installation failed: $_" "ERROR"
+            if (-not $Global:CancellationRequested) {
+                Write-Log "Installation failed: $_" "ERROR"
+            }
             $Global:InstallSuccess = $false
         }
     }

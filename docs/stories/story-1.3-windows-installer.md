@@ -669,6 +669,7 @@ if ($resourceGroupName) {
 - 2025-11-06: README.md updated with Windows Quick Install section
 - 2025-11-06: Ready for testing on Windows by user
 - 2025-11-06: **BUG FIX**: Added resource group creation step (New-AzureResourceGroup function) - installer was setting AZURE_RESOURCE_GROUP variable but not actually creating the resource group in Azure before deployment, causing "ResourceGroupNotFound" error during azd up validation
+- 2025-11-06: **ENHANCEMENT**: Added cancellation support - users can now cancel installation at any time via Cancel button or X button, with confirmation dialog and proper cleanup of running azd processes
 
 ---
 
