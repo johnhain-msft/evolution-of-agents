@@ -300,20 +300,20 @@ function Show-WelcomeScreen {
 Welcome to the Azure AI Foundry Agents installer!
 
 This installer will:
-• Check and install required prerequisites (Azure CLI, Python, etc.)
-• Clone or download the repository
-• Guide you through Azure authentication
-• Deploy Azure infrastructure (AI Foundry, OpenAI, Logic Apps)
-• Set up your local Python environment
-• Create your .env configuration file
+- Check and install required prerequisites (Azure CLI, Python, etc.)
+- Clone or download the repository
+- Guide you through Azure authentication
+- Deploy Azure infrastructure (AI Foundry, OpenAI, Logic Apps)
+- Set up your local Python environment
+- Create your .env configuration file
 
 Estimated time: 30-45 minutes
 (Most time is spent on Azure infrastructure deployment: 15-25 min)
 
 Please ensure you have:
-• Active Azure subscription with Contributor access
-• Stable internet connection
-• ~2 GB free disk space
+- Active Azure subscription with Contributor access
+- Stable internet connection
+- ~2 GB free disk space
 "@
     Write-Log "Adding description to form..."
     $form.Controls.Add($lblDesc)
@@ -368,10 +368,11 @@ function Show-PrerequisitesScreen {
     Write-Log "Creating prerequisites screen form..."
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "Prerequisites Check"
-    $form.Size = New-Object System.Drawing.Size(700, 600)
+    $form.Size = New-Object System.Drawing.Size(700, 650)
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = "FixedDialog"
     $form.MaximizeBox = $false
+    $form.AutoScroll = $true
     Write-Log "Prerequisites form created"
 
     # Title
@@ -605,7 +606,7 @@ function Show-ConfigurationScreen {
 
     # Tenant ID
     $lblTenant = New-Object System.Windows.Forms.Label
-    $lblTenant.Text = "Azure Tenant ID (optional):"
+    $lblTenant.Text = "Azure Tenant ID: *"
     $lblTenant.Location = New-Object System.Drawing.Point(40, $yPos)
     $lblTenant.Size = New-Object System.Drawing.Size(200, 20)
     $form.Controls.Add($lblTenant)
@@ -620,7 +621,7 @@ function Show-ConfigurationScreen {
 
     # Subscription ID
     $lblSubscription = New-Object System.Windows.Forms.Label
-    $lblSubscription.Text = "Azure Subscription ID (optional):"
+    $lblSubscription.Text = "Azure Subscription ID: *"
     $lblSubscription.Location = New-Object System.Drawing.Point(40, $yPos)
     $lblSubscription.Size = New-Object System.Drawing.Size(200, 20)
     $form.Controls.Add($lblSubscription)
@@ -652,7 +653,7 @@ function Show-ConfigurationScreen {
 
     # Resource Group
     $lblResourceGroup = New-Object System.Windows.Forms.Label
-    $lblResourceGroup.Text = "Resource Group (optional):"
+    $lblResourceGroup.Text = "Resource Group Name: *"
     $lblResourceGroup.Location = New-Object System.Drawing.Point(40, $yPos)
     $lblResourceGroup.Size = New-Object System.Drawing.Size(200, 20)
     $form.Controls.Add($lblResourceGroup)
@@ -699,7 +700,7 @@ function Show-ConfigurationScreen {
     $lblInfo.ReadOnly = $true
     $lblInfo.BorderStyle = "None"
     $lblInfo.BackColor = $form.BackColor
-    $lblInfo.Text = "* Required fields`n`nNote: Tenant and Subscription IDs can be auto-detected during Azure login if left blank.`n`nEnvironment Name is used by Azure Developer CLI to track your deployment."
+    $lblInfo.Text = "* All fields are required`n`nEnvironment Name is used by Azure Developer CLI to track your deployment.`n`nYou can find your Tenant and Subscription IDs in the Azure Portal."
     $lblInfo.ForeColor = [System.Drawing.Color]::Gray
     $lblInfo.Font = New-Object System.Drawing.Font("Segoe UI", 8)
     $lblInfo.Location = New-Object System.Drawing.Point(40, $yPos)
@@ -737,14 +738,27 @@ function Show-ConfigurationScreen {
             $errorMsg += "Environment name is required and must be alphanumeric (can include hyphens/underscores)`n"
         }
 
-        if (-not (Test-GuidFormat $txtTenant.Text)) {
+        if ([string]::IsNullOrWhiteSpace($txtTenant.Text)) {
             $valid = $false
-            $errorMsg += "Invalid Tenant ID format (must be a GUID or empty)`n"
+            $errorMsg += "Azure Tenant ID is required`n"
+        }
+        elseif (-not (Test-GuidFormat $txtTenant.Text)) {
+            $valid = $false
+            $errorMsg += "Invalid Tenant ID format (must be a valid GUID)`n"
         }
 
-        if (-not (Test-GuidFormat $txtSubscription.Text)) {
+        if ([string]::IsNullOrWhiteSpace($txtSubscription.Text)) {
             $valid = $false
-            $errorMsg += "Invalid Subscription ID format (must be a GUID or empty)`n"
+            $errorMsg += "Azure Subscription ID is required`n"
+        }
+        elseif (-not (Test-GuidFormat $txtSubscription.Text)) {
+            $valid = $false
+            $errorMsg += "Invalid Subscription ID format (must be a valid GUID)`n"
+        }
+
+        if ([string]::IsNullOrWhiteSpace($txtResourceGroup.Text)) {
+            $valid = $false
+            $errorMsg += "Resource Group Name is required`n"
         }
 
         if ([string]::IsNullOrWhiteSpace($txtInstallDir.Text)) {
