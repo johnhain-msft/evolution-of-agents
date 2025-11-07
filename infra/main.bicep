@@ -81,7 +81,7 @@ resource playwrightWorkspace 'Microsoft.AzurePlaywrightService/accounts@2024-02-
 
 // Role assignment for AI Foundry to access Playwright workspace
 resource playwrightRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(playwrightWorkspace.id, identity.outputs.principalId, 'Contributor')
+  name: guid(subscription().subscriptionId, resourceGroup().id, playwrightWorkspace.name, 'Contributor')
   scope: playwrightWorkspace
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c') // Contributor role
@@ -164,7 +164,6 @@ module office365Connection './modules/function/office365-connection.bicep' = {
   params: {
     location: location
     connectionName: 'office365'
-    managedIdentityId: identity.outputs.resourceId
   }
 }
 
