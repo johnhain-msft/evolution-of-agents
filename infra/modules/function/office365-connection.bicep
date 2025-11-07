@@ -18,5 +18,5 @@ resource office365Connection 'Microsoft.Web/connections@2016-06-01' = {
 // Output connection details
 output connectionId string = office365Connection.id
 output connectionName string = office365Connection.name
-// connectionRuntimeUrl is generated after deployment and accessed via reference()
-output connectionRuntimeUrl string = reference(office365Connection.id, '2016-06-01').connectionRuntimeUrl
+// connectionRuntimeUrl accessed via reference() with 'full' parameter
+output connectionRuntimeUrl string = reference(office365Connection.id, '2016-06-01', 'full').properties.connectionRuntimeUrl

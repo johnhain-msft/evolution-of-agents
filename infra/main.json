@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "14331608345500931184"
+      "templateHash": "10434773265443271852"
     }
   },
   "parameters": {
@@ -16,12 +16,51 @@
     "myIpAddress": {
       "type": "string",
       "defaultValue": ""
+    },
+    "playwrightLocation": {
+      "type": "string",
+      "defaultValue": "eastasia"
     }
   },
   "variables": {
     "resourceToken": "[toLower(uniqueString(resourceGroup().id, parameters('location')))]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Bing/accounts",
+      "apiVersion": "2025-05-01-preview",
+      "name": "[format('bing-grounding-{0}', variables('resourceToken'))]",
+      "location": "global",
+      "kind": "Bing.Grounding",
+      "sku": {
+        "name": "G1"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.AzurePlaywrightService/accounts",
+      "apiVersion": "2024-02-01-preview",
+      "name": "[format('playwright{0}', variables('resourceToken'))]",
+      "location": "[parameters('playwrightLocation')]",
+      "properties": {
+        "regionalAffinity": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.AzurePlaywrightService/accounts/{0}', format('playwright{0}', variables('resourceToken')))]",
+      "name": "[guid(subscription().subscriptionId, resourceGroup().id, format('playwright{0}', variables('resourceToken')), 'Contributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "principalId": "[reference(resourceId('Microsoft.Resources/deployments', format('mgmtidentity-{0}', uniqueString(deployment().name, parameters('location')))), '2025-04-01').outputs.principalId.value]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', format('mgmtidentity-{0}', uniqueString(deployment().name, parameters('location'))))]",
+        "[resourceId('Microsoft.AzurePlaywrightService/accounts', format('playwright{0}', variables('resourceToken')))]"
+      ]
+    },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -4064,6 +4103,21 @@
           "myIpAddress": {
             "value": "[parameters('myIpAddress')]"
           },
+          "bingAccountId": {
+            "value": "[resourceId('Microsoft.Bing/accounts', format('bing-grounding-{0}', variables('resourceToken')))]"
+          },
+          "bingAccountEndpoint": {
+            "value": "[reference(resourceId('Microsoft.Bing/accounts', format('bing-grounding-{0}', variables('resourceToken'))), '2025-05-01-preview').endpoint]"
+          },
+          "playwrightWorkspaceId": {
+            "value": "[resourceId('Microsoft.AzurePlaywrightService/accounts', format('playwright{0}', variables('resourceToken')))]"
+          },
+          "playwrightWorkspaceName": {
+            "value": "[format('playwright{0}', variables('resourceToken'))]"
+          },
+          "playwrightLocation": {
+            "value": "[parameters('playwrightLocation')]"
+          },
           "deployments": {
             "value": [
               {
@@ -4115,7 +4169,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1014808529448479723"
+              "templateHash": "10394527548568226567"
             }
           },
           "definitions": {
@@ -4236,6 +4290,26 @@
               "type": "string",
               "defaultValue": ""
             },
+            "bingAccountId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "bingAccountEndpoint": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "playwrightWorkspaceId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "playwrightWorkspaceName": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "playwrightLocation": {
+              "type": "string",
+              "defaultValue": "[parameters('location')]"
+            },
             "gpt41Deployment": {
               "$ref": "#/definitions/aiModelTDeploymentType",
               "nullable": true
@@ -4252,7 +4326,8 @@
             "useExistingService": "[not(empty(parameters('existing_CogServices_Name')))]",
             "cognitiveServicesKeySecretName": "cognitive-services-key",
             "identityParts": "[split(parameters('managedIdentityId'), '/')]",
-            "managedIdentityName": "[if(greater(length(variables('identityParts')), 0), variables('identityParts')[sub(length(variables('identityParts')), 1)], '')]"
+            "managedIdentityName": "[if(greater(length(variables('identityParts')), 0), variables('identityParts')[sub(length(variables('identityParts')), 1)], '')]",
+            "playwrightWorkspaceEndpoint": "[if(not(empty(parameters('playwrightWorkspaceId'))), format('wss://{0}.api.playwright.microsoft.com/playwrightworkspaces/{1}/browsers', parameters('playwrightLocation'), parameters('playwrightWorkspaceName')), '')]"
           },
           "resources": {
             "account::connection": {
@@ -4279,33 +4354,43 @@
               ]
             },
             "account::bingConnection": {
-              "condition": "[not(variables('useExistingService'))]",
+              "condition": "[and(not(variables('useExistingService')), not(empty(parameters('bingAccountId'))))]",
               "type": "Microsoft.CognitiveServices/accounts/connections",
               "apiVersion": "2025-04-01-preview",
               "name": "[format('{0}/{1}', parameters('name'), 'BingGrounding')]",
               "properties": {
-                "category": "BingGrounding",
+                "category": "BingLLMSearch",
+                "target": "[parameters('bingAccountEndpoint')]",
                 "authType": "ApiKey",
                 "isSharedToAll": true,
-                "credentials": {},
-                "metadata": {}
+                "credentials": {
+                  "key": "[if(not(empty(parameters('bingAccountId'))), listKeys(parameters('bingAccountId'), '2025-05-01-preview').key1, '')]"
+                },
+                "metadata": {
+                  "ApiType": "Azure",
+                  "Location": "[parameters('location')]"
+                }
               },
               "dependsOn": [
                 "account"
               ]
             },
             "account::playwrightConnection": {
-              "condition": "[not(variables('useExistingService'))]",
+              "condition": "[and(not(variables('useExistingService')), not(empty(parameters('playwrightWorkspaceId'))))]",
               "type": "Microsoft.CognitiveServices/accounts/connections",
               "apiVersion": "2025-04-01-preview",
               "name": "[format('{0}/{1}', parameters('name'), 'Playwright')]",
               "properties": {
-                "category": "ServerlessConnection",
-                "authType": "AAD",
+                "category": "Serverless",
+                "target": "[variables('playwrightWorkspaceEndpoint')]",
+                "authType": "ManagedIdentity",
                 "isSharedToAll": true,
+                "useWorkspaceManagedIdentity": true,
                 "metadata": {
                   "Type": "Playwright",
-                  "ApiVersion": "2024-07-01-preview"
+                  "ApiType": "Azure",
+                  "ApiVersion": "2024-07-01-preview",
+                  "ResourceId": "[parameters('playwrightWorkspaceId')]"
                 }
               },
               "dependsOn": [
@@ -4318,6 +4403,13 @@
               "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
               "apiVersion": "2023-07-31-preview",
               "name": "[variables('managedIdentityName')]"
+            },
+            "bingAccount": {
+              "condition": "[not(empty(parameters('bingAccountId')))]",
+              "existing": true,
+              "type": "Microsoft.Bing/accounts",
+              "apiVersion": "2025-05-01-preview",
+              "name": "[last(split(parameters('bingAccountId'), '/'))]"
             },
             "existingAccount": {
               "condition": "[variables('useExistingService')]",
@@ -4409,7 +4501,9 @@
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Bing/accounts', format('bing-grounding-{0}', variables('resourceToken')))]",
         "[resourceId('Microsoft.Resources/deployments', 'log-analytics')]",
+        "[resourceId('Microsoft.AzurePlaywrightService/accounts', format('playwright{0}', variables('resourceToken')))]",
         "[resourceId('Microsoft.Resources/deployments', 'vnet')]"
       ]
     },
@@ -5716,6 +5810,73 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
+      "name": "office365-connection",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "connectionName": {
+            "value": "office365"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1725706602318397676"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "connectionName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/connections",
+              "apiVersion": "2016-06-01",
+              "name": "[parameters('connectionName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "displayName": "Office 365 Connection",
+                "api": {
+                  "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'office365')]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "connectionId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/connections', parameters('connectionName'))]"
+            },
+            "connectionName": {
+              "type": "string",
+              "value": "[parameters('connectionName')]"
+            },
+            "connectionRuntimeUrl": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/connections', parameters('connectionName')), '2016-06-01', 'full').properties.connectionRuntimeUrl]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
       "name": "logic-apps-deployment",
       "properties": {
         "expressionEvaluationOptions": {
@@ -5756,6 +5917,9 @@
           "myIpAddress": {
             "value": "[parameters('myIpAddress')]"
           },
+          "office365ConnectionRuntimeUrl": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'office365-connection'), '2025-04-01').outputs.connectionRuntimeUrl.value]"
+          },
           "tags": {
             "value": {
               "Environment": "Production",
@@ -5772,7 +5936,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "9110759982320106364"
+              "templateHash": "6507246184218004695"
             }
           },
           "parameters": {
@@ -5807,6 +5971,10 @@
               "type": "string"
             },
             "myIpAddress": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "office365ConnectionRuntimeUrl": {
               "type": "string",
               "defaultValue": ""
             },
@@ -11766,9 +11934,9 @@
               },
               "dependsOn": [
                 "identity",
-                "[format('storagePrivateDns[{0}]', 0)]",
-                "[format('storagePrivateDns[{0}]', 1)]",
                 "[format('storagePrivateDns[{0}]', 2)]",
+                "[format('storagePrivateDns[{0}]', 1)]",
+                "[format('storagePrivateDns[{0}]', 0)]",
                 "[format('storagePrivateDns[{0}]', 3)]"
               ]
             },
@@ -14991,7 +15159,7 @@
                     "value": true
                   },
                   "configs": {
-                    "value": "[union(createArray(createObject('name', 'appsettings', 'properties', createObject('FUNCTIONS_EXTENSION_VERSION', '~4', 'FUNCTIONS_WORKER_RUNTIME', 'dotnet', 'APP_KIND', 'workflowApp', 'AZURE_CLIENT_ID', reference('identity').clientId, 'AzureWebJobsStorage__credential', 'managedIdentity', 'AzureWebJobsStorage__credentialType', 'managedIdentity', 'AzureWebJobsStorage__managedIdentityResourceId', parameters('managedIdentityId'), 'AzureWebJobsStorage__clientId', reference('identity').clientId, 'AzureWebJobsStorage__accountName', reference('storageAccount').outputs.name.value, 'AzureWebJobsSecretStorageType', 'files', 'WEBSITE_NODE_DEFAULT_VERSION', '~22', 'AzureFunctionsJobHost__extensionBundle__id', 'Microsoft.Azure.Functions.ExtensionBundle.Workflows', 'AzureFunctionsJobHost__extensionBundle__version', '[1.*, 2.0.0)'), 'storageAccountResourceId', reference('storageAccount').outputs.resourceId.value, 'storageAccountUseIdentityAuthentication', true(), 'applicationInsightResourceId', parameters('applicationInsightResourceId'))), if(empty(parameters('myIpAddress')), createArray(), createArray(createObject('name', 'web', 'properties', createObject('ipSecurityRestrictions', createArray(createObject('action', 'Allow', 'description', 'Allow My IP Address', 'ipAddress', format('{0}/32', parameters('myIpAddress')), 'name', 'My IP Address', 'priority', 100)), 'ipSecurityRestrictionsDefaultAction', 'Deny', 'scmIpSecurityRestrictionsDefaultAction', 'Deny', 'scmIpSecurityRestrictions', if(empty(parameters('myIpAddress')), createArray(), createArray(createObject('action', 'Allow', 'description', 'Allow My IP Address', 'ipAddress', format('{0}/32', parameters('myIpAddress')), 'name', 'My IP Address', 'priority', 100))))))))]"
+                    "value": "[union(createArray(createObject('name', 'appsettings', 'properties', createObject('FUNCTIONS_EXTENSION_VERSION', '~4', 'FUNCTIONS_WORKER_RUNTIME', 'dotnet', 'APP_KIND', 'workflowApp', 'AZURE_CLIENT_ID', reference('identity').clientId, 'AzureWebJobsStorage__credential', 'managedIdentity', 'AzureWebJobsStorage__credentialType', 'managedIdentity', 'AzureWebJobsStorage__managedIdentityResourceId', parameters('managedIdentityId'), 'AzureWebJobsStorage__clientId', reference('identity').clientId, 'AzureWebJobsStorage__accountName', reference('storageAccount').outputs.name.value, 'AzureWebJobsSecretStorageType', 'files', 'WEBSITE_NODE_DEFAULT_VERSION', '~22', 'AzureFunctionsJobHost__extensionBundle__id', 'Microsoft.Azure.Functions.ExtensionBundle.Workflows', 'AzureFunctionsJobHost__extensionBundle__version', '[1.*, 2.0.0)', 'WORKFLOWS_SUBSCRIPTION_ID', subscription().subscriptionId, 'WORKFLOWS_RESOURCE_GROUP_NAME', resourceGroup().name, 'WORKFLOWS_LOCATION_NAME', parameters('location'), 'OFFICE365_CONNECTION_RUNTIME_URL', parameters('office365ConnectionRuntimeUrl')), 'storageAccountResourceId', reference('storageAccount').outputs.resourceId.value, 'storageAccountUseIdentityAuthentication', true(), 'applicationInsightResourceId', parameters('applicationInsightResourceId'))), if(empty(parameters('myIpAddress')), createArray(), createArray(createObject('name', 'web', 'properties', createObject('ipSecurityRestrictions', createArray(createObject('action', 'Allow', 'description', 'Allow My IP Address', 'ipAddress', format('{0}/32', parameters('myIpAddress')), 'name', 'My IP Address', 'priority', 100)), 'ipSecurityRestrictionsDefaultAction', 'Deny', 'scmIpSecurityRestrictionsDefaultAction', 'Deny', 'scmIpSecurityRestrictions', if(empty(parameters('myIpAddress')), createArray(), createArray(createObject('action', 'Allow', 'description', 'Allow My IP Address', 'ipAddress', format('{0}/32', parameters('myIpAddress')), 'name', 'My IP Address', 'priority', 100))))))))]"
                   },
                   "privateEndpoints": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), createObject('value', createArray(createObject('tags', createObject(), 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'service', 'sites', 'privateDnsZoneGroup', createObject('privateDnsZoneGroupConfigs', createArray(createObject('privateDnsZoneResourceId', parameters('logicAppPrivateDnsZoneId'))))))), createObject('value', createArray()))]"
                 },
@@ -27858,6 +28026,7 @@
         "[resourceId('Microsoft.Resources/deployments', 'dns-sites')]",
         "[resourceId('Microsoft.Resources/deployments', format('mgmtidentity-{0}', uniqueString(deployment().name, parameters('location'))))]",
         "[resourceId('Microsoft.Resources/deployments', 'log-analytics')]",
+        "[resourceId('Microsoft.Resources/deployments', 'office365-connection')]",
         "[resourceId('Microsoft.Resources/deployments', 'vnet')]"
       ]
     },

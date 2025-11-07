@@ -75,8 +75,9 @@ resource bingAccount 'Microsoft.Bing/accounts@2025-05-01-preview' = {
 
 // Playwright Workspace for browser automation
 // Note: Playwright is only available in limited regions (eastus, westus3, westeurope, eastasia)
+// Name must be alphanumeric only (no hyphens), start with letter, 3-64 chars
 resource playwrightWorkspace 'Microsoft.AzurePlaywrightService/accounts@2024-02-01-preview' = {
-  name: 'playwright-${resourceToken}'
+  name: 'playwright${resourceToken}'
   location: playwrightLocation
   properties: {
     regionalAffinity: 'Enabled'
