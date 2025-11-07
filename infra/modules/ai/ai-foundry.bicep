@@ -21,6 +21,7 @@ param bingAccountId string = ''
 param bingAccountEndpoint string = ''
 param playwrightWorkspaceId string = ''
 param playwrightWorkspaceName string = ''
+param playwrightLocation string = location
 
 // --------------------------------------------------------------------------------------------------------------
 // Variables
@@ -60,9 +61,9 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-p
 }
 
 // --------------------------------------------------------------------------------------------------------------
-// Construct Playwright workspace endpoint
+// Construct Playwright workspace endpoint using the Playwright-specific location
 var playwrightWorkspaceEndpoint = !empty(playwrightWorkspaceId)
-  ? 'wss://${location}.api.playwright.microsoft.com/playwrightworkspaces/${playwrightWorkspaceName}/browsers'
+  ? 'wss://${playwrightLocation}.api.playwright.microsoft.com/playwrightworkspaces/${playwrightWorkspaceName}/browsers'
   : ''
 
 // Reference Bing account to get API key

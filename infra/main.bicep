@@ -7,6 +7,9 @@ targetScope = 'resourceGroup'
 
 param location string = resourceGroup().location
 param myIpAddress string = ''
+// Playwright is only available in limited regions: eastus, westus3, westeurope, eastasia
+// Default to eastasia (closest to Japan regions)
+param playwrightLocation string = 'eastasia'
 
 var resourceToken = toLower(uniqueString(resourceGroup().id, location))
 
@@ -71,9 +74,10 @@ resource bingAccount 'Microsoft.Bing/accounts@2025-05-01-preview' = {
 }
 
 // Playwright Workspace for browser automation
+// Note: Playwright is only available in limited regions (eastus, westus3, westeurope, eastasia)
 resource playwrightWorkspace 'Microsoft.AzurePlaywrightService/accounts@2024-02-01-preview' = {
   name: 'playwright-${resourceToken}'
-  location: location
+  location: playwrightLocation
   properties: {
     regionalAffinity: 'Enabled'
   }
@@ -104,6 +108,7 @@ module foundry './modules/ai/ai-foundry.bicep' = {
     bingAccountEndpoint: bingAccount.properties.endpoint
     playwrightWorkspaceId: playwrightWorkspace.id
     playwrightWorkspaceName: playwrightWorkspace.name
+    playwrightLocation: playwrightLocation
     deployments: [
       {
         name: 'gpt-35-turbo'
