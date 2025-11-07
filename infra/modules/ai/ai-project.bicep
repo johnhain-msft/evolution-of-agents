@@ -193,10 +193,10 @@ output projectConnectionString string = 'https://${foundry_name}.services.ai.azu
 output isAiResourceValid bool = isAiResourceValid
 
 // return the BYO connection names
-output cosmosDBConnection string = project_connection_cosmosdb_account.name
-output capabilityHostName string = accountCapabilityHost.name
-output azureStorageConnection string = project_connection_azure_storage.name
-output aiSearchConnection string = project_connection_azureai_search.name
+output cosmosDBConnection string = !empty(cosmosDBName) ? project_connection_cosmosdb_account.name : ''
+output capabilityHostName string = createHubCapabilityHost ? accountCapabilityHost.name : ''
+output azureStorageConnection string = !empty(azureStorageName) ? project_connection_azure_storage.name : ''
+output aiSearchConnection string = !empty(aiSearchName) ? project_connection_azureai_search.name : ''
 output aiFoundryConnectionName string = empty(existingAiResourceId)
   ? ''
   : usingFoundryAiConnection ? byoAiFoundryConnectionName : byoAiProjectConnectionName
