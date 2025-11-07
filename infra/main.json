@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "18093304075012562445"
+      "templateHash": "4726903290349474340"
     }
   },
   "parameters": {
@@ -4170,7 +4170,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "10394527548568226567"
+              "templateHash": "7260761734012292704"
             }
           },
           "definitions": {
@@ -4384,9 +4384,8 @@
               "properties": {
                 "category": "Serverless",
                 "target": "[variables('playwrightWorkspaceEndpoint')]",
-                "authType": "ManagedIdentity",
+                "authType": "AAD",
                 "isSharedToAll": true,
-                "useWorkspaceManagedIdentity": true,
                 "metadata": {
                   "Type": "Playwright",
                   "ApiType": "Azure",
@@ -5965,7 +5964,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "6507246184218004695"
+              "templateHash": "2729110201639467672"
             }
           },
           "parameters": {
@@ -11964,9 +11963,9 @@
               "dependsOn": [
                 "identity",
                 "[format('storagePrivateDns[{0}]', 2)]",
+                "[format('storagePrivateDns[{0}]', 3)]",
                 "[format('storagePrivateDns[{0}]', 1)]",
-                "[format('storagePrivateDns[{0}]', 0)]",
-                "[format('storagePrivateDns[{0}]', 3)]"
+                "[format('storagePrivateDns[{0}]', 0)]"
               ]
             },
             "storagePrivateDns": {
