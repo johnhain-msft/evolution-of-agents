@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "15245191298753149434"
+      "templateHash": "580196133235782020"
     }
   },
   "parameters": {
@@ -4520,7 +4520,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13253870235590967724"
+              "templateHash": "10959282130251454584"
             }
           },
           "definitions": {
@@ -4848,6 +4848,9 @@
                   },
                   "existingAiKind": {
                     "value": "[parameters('existingAiResourceKind')]"
+                  },
+                  "createHubCapabilityHost": {
+                    "value": true
                   },
                   "aiSearchName": {
                     "value": "[parameters('aiDependencies').aiSearch.name]"
@@ -5943,7 +5946,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "3344181516933473286"
+              "templateHash": "587315117515006245"
             }
           },
           "parameters": {
@@ -11941,10 +11944,10 @@
               },
               "dependsOn": [
                 "identity",
-                "[format('storagePrivateDns[{0}]', 1)]",
                 "[format('storagePrivateDns[{0}]', 0)]",
-                "[format('storagePrivateDns[{0}]', 3)]",
-                "[format('storagePrivateDns[{0}]', 2)]"
+                "[format('storagePrivateDns[{0}]', 2)]",
+                "[format('storagePrivateDns[{0}]', 1)]",
+                "[format('storagePrivateDns[{0}]', 3)]"
               ]
             },
             "storagePrivateDns": {

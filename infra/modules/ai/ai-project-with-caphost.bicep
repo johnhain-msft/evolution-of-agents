@@ -29,6 +29,7 @@ module aiProject './ai-project.bicep' = {
     managedIdentityId: managedIdentityId // Use System Assigned Identity
     existingAiResourceId: existingAiResourceId
     existingAiKind: existingAiResourceKind
+    createHubCapabilityHost: true // CRITICAL: Must create account CapabilityHost before project CapabilityHost
 
     aiSearchName: aiDependencies.aiSearch.name
     aiSearchServiceResourceGroupName: aiDependencies.aiSearch.resourceGroupName
@@ -95,6 +96,7 @@ module addProjectCapabilityHost 'add-project-capability-host.bicep' = {
     aiFoundryConnectionName: aiProject.outputs.aiFoundryConnectionName
   }
   dependsOn: [
+     aiProject // CRITICAL: Wait for account CapabilityHost to be created first
      cosmosAccountRoleAssignments
      storageAccountRoleAssignment
      aiSearchRoleAssignments
