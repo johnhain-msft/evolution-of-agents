@@ -51,30 +51,12 @@ class AzureStandardLogicAppTool:
     ) -> Dict[str, Any]:
         """
         Get the trigger definition for a workflow in Logic App Standard.
-        Reads from local workflow.json file instead of REST API (which doesn't support schema endpoint).
         """
-        import os
-        import json
-
-        # Read workflow definition from local file
-        workflow_file = os.path.join("src", "workflows", workflow_name, "workflow.json")
-
-        if not os.path.exists(workflow_file):
-            raise FileNotFoundError(f"Workflow file not found: {workflow_file}")
-
-        with open(workflow_file, "r") as f:
-            workflow_def = json.load(f)
-
-        # Extract trigger schema from definition
-        triggers = workflow_def.get("definition", {}).get("triggers", {})
-
-        if trigger_name not in triggers:
-            raise ValueError(f"Trigger '{trigger_name}' not found in workflow '{workflow_name}'")
-
-        trigger_def = triggers[trigger_name]
-
-        # Return the trigger inputs schema (or empty if not defined)
-        return trigger_def.get("inputs", {}).get("schema", {})
+        url = f"{self.base_url}/providers/Microsoft.Web/sites/{logic_app_name}/hostruntime/runtime/webhooks/workflow/api/management/workflows/{workflow_name}/triggers/{trigger_name}/schemas/json?api-version=2024-11-01"
+        headers = {"Authorization": f"Bearer {self.get_access_token()}"}
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
 
     def generate_openapi_spec_from_trigger(
         self, workflow_name: str, trigger_def: Dict[str, Any], server_url: str = None
