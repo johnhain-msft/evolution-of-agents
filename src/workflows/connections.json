@@ -2,7 +2,8 @@
     "agentConnections": {
         "agent": {
             "authentication": {
-                "type": "ManagedServiceIdentity"
+                "type": "ManagedServiceIdentity",
+                "identity": "SystemAssigned"
             },
             "displayName": "AI Foundry",
             "endpoint": "@{appsetting('AI_PROJECT_ENDPOINT')}",
@@ -11,7 +12,8 @@
         },
          "agent-1": {
             "authentication": {
-                "type": "ManagedServiceIdentity"
+                "type": "ManagedServiceIdentity",
+                "identity": "SystemAssigned"
             },
             "displayName": "Open AI",
             "endpoint": "@{appsetting('AI_PROJECT_ENDPOINT')}",
