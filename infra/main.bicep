@@ -172,25 +172,29 @@ module logicAppAiFoundryRoleAssignment './modules/iam/role-assignment-foundryPro
   params: {
     accountName: foundry.outputs.name
     projectName: project1.outputs.projectName
-    projectPrincipalId: identity.outputs.principalId
+    projectPrincipalId: logicAppsDeployment.outputs.logicAppSystemAssignedPrincipalId
     roleName: 'Azure AI Project Manager'
     servicePrincipalType: 'ServicePrincipal'
   }
   dependsOn: [
     project1
+    logicAppsDeployment
   ]
 }
 
 // Office 365 connection for Logic Apps
-// Uses the same managed identity as the Logic App for access policy
+// Uses the Logic App's system-assigned managed identity for access policy
 // Connection name: office365v2 (V2 kind to support connectionRuntimeUrl)
 module office365Connection './modules/function/office365-connection.bicep' = {
   name: 'office365-connection'
   params: {
     location: location
     connectionName: 'office365v2'
-    logicAppPrincipalId: identity.outputs.principalId
+    logicAppPrincipalId: logicAppsDeployment.outputs.logicAppSystemAssignedPrincipalId
   }
+  dependsOn: [
+    logicAppsDeployment
+  ]
 }
 
 module logicAppsDeployment './modules/function/function-app-with-plan.bicep' = {

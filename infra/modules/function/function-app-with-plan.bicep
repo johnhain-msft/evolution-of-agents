@@ -205,7 +205,10 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
     kind: 'functionapp,workflowapp'
     name: '${name}-${resourceToken}'
     serverFarmResourceId: serverfarmForLogicApps.id
-    managedIdentities: { userAssignedResourceIds: [managedIdentityId] }
+    managedIdentities: {
+      systemAssigned: true
+      userAssignedResourceIds: [managedIdentityId]
+    }
     publicNetworkAccess: 'Enabled'
 
     virtualNetworkSubnetResourceId: logicAppsSubnetResourceId
@@ -308,5 +311,6 @@ output planName string = serverfarmForLogicApps.name
 output dnsBlobZoneId string = storagePrivateDns[0].outputs.resourceId
 output logicAppName string = logicApp.outputs.name
 output logicAppResourceId string = logicApp.outputs.resourceId
+output logicAppSystemAssignedPrincipalId string = logicApp.outputs.systemAssignedMIPrincipalId
 output subscriptionId string = subscription().subscriptionId
 output logicAppResourceGroupName string = logicApp.outputs.resourceGroupName

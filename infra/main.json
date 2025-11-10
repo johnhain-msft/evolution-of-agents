@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "18244240684439730369"
+      "templateHash": "17769562644138934809"
     }
   },
   "parameters": {
@@ -4520,7 +4520,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "422276558151038885"
+              "templateHash": "11501935927040278907"
             }
           },
           "definitions": {
@@ -4850,7 +4850,7 @@
                     "value": "[parameters('existingAiResourceKind')]"
                   },
                   "createHubCapabilityHost": {
-                    "value": true
+                    "value": false
                   },
                   "aiSearchName": {
                     "value": "[parameters('aiDependencies').aiSearch.name]"
@@ -4888,7 +4888,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.38.33.27573",
-                      "templateHash": "16159802095381912026"
+                      "templateHash": "3763431729098872762"
                     }
                   },
                   "parameters": {
@@ -5092,18 +5092,6 @@
                         "foundry_project"
                       ]
                     },
-                    "accountCapabilityHost": {
-                      "condition": "[parameters('createHubCapabilityHost')]",
-                      "type": "Microsoft.CognitiveServices/accounts/capabilityHosts",
-                      "apiVersion": "2025-04-01-preview",
-                      "name": "[format('{0}/{1}', parameters('foundry_name'), format('account-caphost-{0}', uniqueString(resourceGroup().id, parameters('foundry_name'))))]",
-                      "properties": {
-                        "capabilityHostKind": "Agents"
-                      },
-                      "dependsOn": [
-                        "foundry_project"
-                      ]
-                    },
                     "project_connection_cosmosdb_account": {
                       "condition": "[not(empty(parameters('cosmosDBName')))]",
                       "type": "Microsoft.CognitiveServices/accounts/projects/connections",
@@ -5184,19 +5172,19 @@
                     },
                     "cosmosDBConnection": {
                       "type": "string",
-                      "value": "[format('{0}-for-{1}', parameters('cosmosDBName'), parameters('project_name'))]"
+                      "value": "[if(not(empty(parameters('cosmosDBName'))), format('{0}-for-{1}', parameters('cosmosDBName'), parameters('project_name')), '')]"
                     },
                     "capabilityHostName": {
                       "type": "string",
-                      "value": "[format('account-caphost-{0}', uniqueString(resourceGroup().id, parameters('foundry_name')))]"
+                      "value": ""
                     },
                     "azureStorageConnection": {
                       "type": "string",
-                      "value": "[format('{0}-for-{1}', parameters('azureStorageName'), parameters('project_name'))]"
+                      "value": "[if(not(empty(parameters('azureStorageName'))), format('{0}-for-{1}', parameters('azureStorageName'), parameters('project_name')), '')]"
                     },
                     "aiSearchConnection": {
                       "type": "string",
-                      "value": "[format('{0}-for-{1}', parameters('aiSearchName'), parameters('project_name'))]"
+                      "value": "[if(not(empty(parameters('aiSearchName'))), format('{0}-for-{1}', parameters('aiSearchName'), parameters('project_name')), '')]"
                     },
                     "aiFoundryConnectionName": {
                       "type": "string",
@@ -5946,7 +5934,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "15584651002998803889"
+              "templateHash": "6791663874609008338"
             }
           },
           "parameters": {
@@ -11945,9 +11933,9 @@
               "dependsOn": [
                 "identity",
                 "[format('storagePrivateDns[{0}]', 0)]",
+                "[format('storagePrivateDns[{0}]', 1)]",
                 "[format('storagePrivateDns[{0}]', 3)]",
-                "[format('storagePrivateDns[{0}]', 2)]",
-                "[format('storagePrivateDns[{0}]', 1)]"
+                "[format('storagePrivateDns[{0}]', 2)]"
               ]
             },
             "storagePrivateDns": {
