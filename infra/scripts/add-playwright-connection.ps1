@@ -1,4 +1,4 @@
-﻿﻿# Post-deployment script to add Playwright connection to AI Foundry
+﻿# Post-deployment script to add Playwright connection to AI Foundry
 # Uses Entra ID authentication (no manual tokens required)
 #
 # Prerequisites:
