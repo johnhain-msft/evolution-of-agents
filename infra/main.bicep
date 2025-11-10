@@ -183,18 +183,16 @@ module logicAppAiFoundryRoleAssignment './modules/iam/role-assignment-foundryPro
 }
 
 // Office 365 connection for Logic Apps
-// Uses the Logic App's system-assigned managed identity for access policy
+// Uses user-assigned managed identity for access policy (Logic App has both system and user-assigned)
+// Agent connections require system-assigned, but Office365 connection works with user-assigned
 // Connection name: office365v2 (V2 kind to support connectionRuntimeUrl)
 module office365Connection './modules/function/office365-connection.bicep' = {
   name: 'office365-connection'
   params: {
     location: location
     connectionName: 'office365v2'
-    logicAppPrincipalId: logicAppsDeployment.outputs.logicAppSystemAssignedPrincipalId
+    logicAppPrincipalId: identity.outputs.principalId
   }
-  dependsOn: [
-    logicAppsDeployment
-  ]
 }
 
 module logicAppsDeployment './modules/function/function-app-with-plan.bicep' = {
