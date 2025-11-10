@@ -111,8 +111,8 @@ class AzureStandardLogicAppTool:
             "openapi": "3.0.3",
             "info": {
                 "version": "1.0.0.0",
-                "title": workflow_name.replace("_", "-"),
-                "description": workflow_name.replace("_", "-"),
+                "title": workflow_name.replace("-", "_").replace(" ", "_"),
+                "description": workflow_name.replace("-", "_").replace(" ", "_"),
             },
             "servers": [{"url": server_url or "https://your-logic-app-url/paths"}],
             "security": [{"sig": []}],
