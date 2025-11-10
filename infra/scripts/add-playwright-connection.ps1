@@ -1,4 +1,4 @@
-﻿# Post-deployment script to add Playwright connection to AI Foundry
+﻿﻿# Post-deployment script to add Playwright connection to AI Foundry
 # Uses Entra ID authentication (no manual tokens required)
 #
 # Prerequisites:
@@ -9,18 +9,16 @@
 Write-Host "Adding Playwright connection to AI Foundry..." -ForegroundColor Cyan
 
 # Get parameters from environment or azd
-$resourceGroup = if ($env:AZURE_RESOURCE_GROUP_NAME) { $env:AZURE_RESOURCE_GROUP_NAME } else { azd env get-value AZURE_RESOURCE_GROUP_NAME }
-$subscriptionId = if ($env:AZURE_SUBSCRIPTION_ID) { $env:AZURE_SUBSCRIPTION_ID } else { az account show --query id -o tsv }
-$location = if ($env:AZURE_LOCATION) { $env:AZURE_LOCATION } else { azd env get-value AZURE_LOCATION }
+$resourceGroup = if ($env:AZURE_AI_FOUNDRY_RESOURCE_GROUP) { $env:AZURE_AI_FOUNDRY_RESOURCE_GROUP } else { azd env get-value AZURE_AI_FOUNDRY_RESOURCE_GROUP }
+$subscriptionId = if ($env:AZURE_AI_FOUNDRY_SUBSCRIPTION_ID) { $env:AZURE_AI_FOUNDRY_SUBSCRIPTION_ID } else { azd env get-value AZURE_AI_FOUNDRY_SUBSCRIPTION_ID }
+# Get location from resource group since it's not in outputs
+$location = az group show --name $resourceGroup --query location -o tsv
 
-# Get AI Foundry hub name
-$aiFoundryName = az cognitiveservices account list `
-  --resource-group $resourceGroup `
-  --query "[?kind=='AIServices'].name | [0]" `
-  --output tsv
+# Get AI Foundry hub name from environment
+$aiFoundryName = if ($env:AZURE_AI_FOUNDRY_NAME) { $env:AZURE_AI_FOUNDRY_NAME } else { azd env get-value AZURE_AI_FOUNDRY_NAME }
 
 if ([string]::IsNullOrEmpty($aiFoundryName)) {
-  Write-Error "AI Foundry hub not found in resource group $resourceGroup"
+  Write-Error "AI Foundry hub name not found in environment (AZURE_AI_FOUNDRY_NAME)"
   exit 1
 }
 

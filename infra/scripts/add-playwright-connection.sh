@@ -12,18 +12,16 @@ set -e
 echo "Adding Playwright connection to AI Foundry..."
 
 # Get parameters from environment or azd
-RESOURCE_GROUP="${AZURE_RESOURCE_GROUP_NAME:-$(azd env get-value AZURE_RESOURCE_GROUP_NAME)}"
-SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-$(az account show --query id -o tsv)}"
-LOCATION="${AZURE_LOCATION:-$(azd env get-value AZURE_LOCATION)}"
+RESOURCE_GROUP="${AZURE_AI_FOUNDRY_RESOURCE_GROUP:-$(azd env get-value AZURE_AI_FOUNDRY_RESOURCE_GROUP)}"
+SUBSCRIPTION_ID="${AZURE_AI_FOUNDRY_SUBSCRIPTION_ID:-$(azd env get-value AZURE_AI_FOUNDRY_SUBSCRIPTION_ID)}"
+# Get location from resource group since it's not in outputs
+LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
 
-# Get AI Foundry hub name (find the CognitiveServices account with kind 'AIServices')
-AI_FOUNDRY_NAME=$(az cognitiveservices account list \
-  --resource-group "$RESOURCE_GROUP" \
-  --query "[?kind=='AIServices'].name | [0]" \
-  --output tsv)
+# Get AI Foundry hub name from environment
+AI_FOUNDRY_NAME="${AZURE_AI_FOUNDRY_NAME:-$(azd env get-value AZURE_AI_FOUNDRY_NAME)}"
 
 if [ -z "$AI_FOUNDRY_NAME" ]; then
-  echo "ERROR: AI Foundry hub not found in resource group $RESOURCE_GROUP"
+  echo "ERROR: AI Foundry hub name not found in environment (AZURE_AI_FOUNDRY_NAME)"
   exit 1
 fi
 
@@ -97,7 +95,7 @@ if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
   exit 1
 fi
 
-echo "✓ Playwright connection created successfully!"
+echo "[OK] Playwright connection created successfully!"
 echo ""
 echo "Connection details:"
 echo "  Name: Playwright"
