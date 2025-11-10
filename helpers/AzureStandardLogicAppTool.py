@@ -108,7 +108,7 @@ class AzureStandardLogicAppTool:
             "servers": [{"url": server_url or "https://your-logic-app-url/paths"}],
             "security": [{"sig": []}],
             "paths": {
-                "/invoke": {
+                "": {
                     "post": {
                         "description": f"Invoke {workflow_name} Logic App workflow",
                         "operationId": f"{operation_id}-invoke",
@@ -342,13 +342,12 @@ if __name__ == "__main__":
             [f"{k}={v[0]}" for k, v in filtered_params.items()]
         )
 
-        # Build base URL without /invoke suffix
-        base_url_path = parsed_callback.path
-        if base_url_path.endswith("/invoke"):
-            base_url_path = base_url_path[: -len("/invoke")]
-
-        # Server URL includes api-version, sp, sv but NOT sig
-        base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{base_url_path}"
+        # OpenAPI concatenates {server-url}{path}
+        # Since we use empty path "", the server URL must include /invoke
+        # Server URL: https://logic-app.../triggers/name/invoke?api-version=...&sp=...&sv=...
+        # Path: "" (empty)
+        # Result: Full callback URL without sig
+        base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{parsed_callback.path}"
         if filtered_query_string:
             base_callback_url = f"{base_callback_url}?{filtered_query_string}"
 
