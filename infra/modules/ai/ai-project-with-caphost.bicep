@@ -29,7 +29,7 @@ module aiProject './ai-project.bicep' = {
     managedIdentityId: managedIdentityId // Use System Assigned Identity
     existingAiResourceId: existingAiResourceId
     existingAiKind: existingAiResourceKind
-    createHubCapabilityHost: true // CRITICAL: Must create account CapabilityHost before project CapabilityHost
+    createHubCapabilityHost: false // Account-level CapabilityHost removed - project-level is sufficient
 
     aiSearchName: aiDependencies.aiSearch.name
     aiSearchServiceResourceGroupName: aiDependencies.aiSearch.resourceGroupName
@@ -84,7 +84,8 @@ module aiSearchRoleAssignments '../iam/ai-search-role-assignments.bicep' = {
   }
 }
 
-// This module creates the capability host for the project and account
+// This module creates the project-level capability host
+// Account-level CapabilityHost removed to prevent 409 Conflict - project-level is sufficient
 module addProjectCapabilityHost 'add-project-capability-host.bicep' = {
   name: 'capabilityHost-configuration-deployment-${projectId}'
   params: {
@@ -96,7 +97,7 @@ module addProjectCapabilityHost 'add-project-capability-host.bicep' = {
     aiFoundryConnectionName: aiProject.outputs.aiFoundryConnectionName
   }
   dependsOn: [
-     aiProject // CRITICAL: Wait for account CapabilityHost to be created first
+     aiProject
      cosmosAccountRoleAssignments
      storageAccountRoleAssignment
      aiSearchRoleAssignments

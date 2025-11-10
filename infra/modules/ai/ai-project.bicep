@@ -25,6 +25,7 @@ param cosmosDBResourceGroupName string = ''
 param azureStorageName string = ''
 param azureStorageSubscriptionId string = ''
 param azureStorageResourceGroupName string = ''
+@description('Deprecated: Account-level CapabilityHost removed to prevent 409 Conflict. Kept for backwards compatibility.')
 param createHubCapabilityHost bool = false
 
 // --------------------------------------------------------------------------------------------------------------
@@ -128,19 +129,14 @@ resource byoAoaiConnection 'Microsoft.CognitiveServices/accounts/projects/connec
   }
 }
 
-// TODO is caphost on account level needed? This sample doesn't use it
-// https://github.com/azure-ai-foundry/foundry-samples/blob/main/samples/microsoft/infrastructure-setup/15-private-network-standard-agent-setup/README.md
-
-resource accountCapabilityHost 'Microsoft.CognitiveServices/accounts/capabilityHosts@2025-04-01-preview' = if (createHubCapabilityHost) {
-  name: 'account-caphost-${uniqueString(resourceGroup().id, foundry_name)}'
-  parent: foundry
-  properties: {
-    capabilityHostKind: 'Agents'
-  }
-  dependsOn: [
-    foundry_project
-  ]
-}
+// Account-level CapabilityHost removed to prevent 409 Conflict on deployment retry
+// Account-level CapabilityHost is optional - project-level CapabilityHost (created in add-project-capability-host.bicep)
+// has higher priority and provides all necessary configuration
+// Reference: https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/capability-hosts
+//
+// Issue: CapabilityHost resources are NOT idempotent by design. If Azure retries the deployment
+// for any reason, it attempts to recreate the CapabilityHost, which fails with 409 Conflict.
+// Solution: Only create project-level CapabilityHost, which is sufficient for all scenarios.
 
 resource project_connection_cosmosdb_account 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(cosmosDBName)) {
   name: '${cosmosDBName}-for-${project_name}'
@@ -194,7 +190,7 @@ output isAiResourceValid bool = isAiResourceValid
 
 // return the BYO connection names
 output cosmosDBConnection string = !empty(cosmosDBName) ? project_connection_cosmosdb_account.name : ''
-output capabilityHostName string = createHubCapabilityHost ? accountCapabilityHost.name : ''
+output capabilityHostName string = '' // Account-level CapabilityHost no longer created (see comment above)
 output azureStorageConnection string = !empty(azureStorageName) ? project_connection_azure_storage.name : ''
 output aiSearchConnection string = !empty(aiSearchName) ? project_connection_azureai_search.name : ''
 output aiFoundryConnectionName string = empty(existingAiResourceId)
