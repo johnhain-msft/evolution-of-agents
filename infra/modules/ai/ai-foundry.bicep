@@ -17,8 +17,6 @@ param sku object = {
 @description('Provide the IP address to allow access to the Azure Container Registry')
 param myIpAddress string = ''
 param managedIdentityId string = ''
-param bingAccountId string = ''
-param bingAccountEndpoint string = ''
 param playwrightWorkspaceId string = ''
 param playwrightWorkspaceName string = ''
 param playwrightLocation string = location
@@ -65,11 +63,6 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-p
 var playwrightWorkspaceEndpoint = !empty(playwrightWorkspaceId)
   ? 'wss://${playwrightLocation}.api.playwright.microsoft.com/playwrightworkspaces/${playwrightWorkspaceName}/browsers'
   : ''
-
-// Reference Bing account to get API key
-resource bingAccount 'Microsoft.Bing/accounts@2025-05-01-preview' existing = if (!empty(bingAccountId)) {
-  name: last(split(bingAccountId, '/'))
-}
 
 resource existingAccount 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = if (useExistingService) {
   scope: resourceGroup(existing_CogServices_RG_Name, existing_CogServices_SubId)
@@ -142,23 +135,9 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = if 
     }
   }
 
-  // FIXED (Story 1.2): Added Bing grounding connection for web research in notebook 7
-  resource bingConnection 'connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
-    name: 'BingGrounding'
-    properties: {
-      category: 'BingLLMSearch'
-      target: bingAccountEndpoint
-      authType: 'ApiKey'
-      isSharedToAll: true
-      credentials: {
-        key: !empty(bingAccountId) ? listKeys(bingAccountId, '2025-05-01-preview').key1 : ''
-      }
-      metadata: {
-        ApiType: 'Azure'
-        Location: location
-      }
-    }
-  }
+  // NOTE: Bing connection moved to project-level (ai-project.bicep)
+  // Reason: client.connections.list() only returns project-level connections
+  // Account-level connections with isSharedToAll=true are not visible to the SDK
 
   // NOTE: Playwright connection moved to post-deployment script
   // Reason: Requires Entra ID access token that can't be generated in Bicep

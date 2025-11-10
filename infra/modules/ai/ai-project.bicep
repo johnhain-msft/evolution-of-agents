@@ -28,6 +28,9 @@ param azureStorageResourceGroupName string = ''
 @description('Deprecated: Account-level CapabilityHost removed to prevent 409 Conflict. Kept for backwards compatibility.')
 param createHubCapabilityHost bool = false
 
+param bingAccountId string = ''
+param bingAccountEndpoint string = ''
+
 // --------------------------------------------------------------------------------------------------------------
 // split managed identity resource ID to get the name
 var identityParts = split(managedIdentityId, '/')
@@ -179,6 +182,25 @@ resource project_connection_azureai_search 'Microsoft.CognitiveServices/accounts
       ApiType: 'Azure'
       ResourceId: searchService.id
       location: searchService!.location
+    }
+  }
+}
+
+// Project-level Bing connection for web research (moved from account level)
+// client.connections.list() only returns project-level connections
+resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
+  name: 'binggrounding-for-${project_name}'
+  parent: foundry_project
+  properties: {
+    category: 'BingLLMSearch'
+    target: bingAccountEndpoint
+    authType: 'ApiKey'
+    credentials: {
+      key: !empty(bingAccountId) ? listKeys(bingAccountId, '2025-05-01-preview').key1 : ''
+    }
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: bingAccountId
     }
   }
 }

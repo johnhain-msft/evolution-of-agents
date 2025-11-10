@@ -14,6 +14,9 @@ param managedIdentityId string? // Use System Assigned Identity
 
 param projectId int
 
+param bingAccountId string = ''
+param bingAccountEndpoint string = ''
+
 resource foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
   name: foundryName
 }
@@ -42,6 +45,9 @@ module aiProject './ai-project.bicep' = {
     cosmosDBName: aiDependencies.cosmosDB.name
     cosmosDBResourceGroupName: aiDependencies.cosmosDB.resourceGroupName
     cosmosDBSubscriptionId: aiDependencies.cosmosDB.subscriptionId
+
+    bingAccountId: bingAccountId
+    bingAccountEndpoint: bingAccountEndpoint
   }
 }
 

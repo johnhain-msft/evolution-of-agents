@@ -106,8 +106,6 @@ module foundry './modules/ai/ai-foundry.bicep' = {
     publicNetworkAccess: 'Enabled'
     agentSubnetId: vnet.outputs.agentSubnetId // Use the first agent subnet
     myIpAddress: myIpAddress
-    bingAccountId: bingAccount.id
-    bingAccountEndpoint: bingAccount.properties.endpoint
     playwrightWorkspaceId: playwrightWorkspace.id
     playwrightWorkspaceName: playwrightWorkspace.name
     playwrightLocation: playwrightLocation
@@ -162,6 +160,8 @@ module project1 './modules/ai/ai-project-with-caphost.bicep' = {
     projectId: 1
     aiDependencies: ai_dependencies.outputs.aiDependencies
     managedIdentityId: identity.outputs.resourceId
+    bingAccountId: bingAccount.id
+    bingAccountEndpoint: bingAccount.properties.endpoint
   }
 }
 
