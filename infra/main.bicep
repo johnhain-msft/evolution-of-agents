@@ -39,14 +39,9 @@ module ai_dependencies './modules/ai/ai-dependencies-with-dns.bicep' = {
     resourceToken: resourceToken
     aiServicesName: '' // create AI serviced PE later
     aiAccountNameResourceGroupName: ''
-    existingDnsZones: {
-      //disable-next-line no-hardcoded-env-urls
-      'privatelink.blob.${environment().suffixes.storage}': {
-        name: 'privatelink.blob.${environment().suffixes.storage}'
-        resourceGroupName: resourceGroup().name
-        subscriptionId: subscription().subscriptionId
-      }
-    }
+    // Use default existingDnsZones (types.DefaultDNSZones = all null)
+    // This creates DNS zones in the current resource group on fresh deployments
+    // For hub-spoke: pass existingDnsZones with hub RG name to reference pre-existing zones
   }
 }
 
