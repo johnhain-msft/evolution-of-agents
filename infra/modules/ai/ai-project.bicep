@@ -30,6 +30,7 @@ param createHubCapabilityHost bool = false
 
 param bingAccountId string = ''
 param bingAccountEndpoint string = ''
+param resourceToken string
 
 // --------------------------------------------------------------------------------------------------------------
 // split managed identity resource ID to get the name
@@ -188,8 +189,10 @@ resource project_connection_azureai_search 'Microsoft.CognitiveServices/accounts
 
 // Project-level Bing connection for web research (moved from account level)
 // client.connections.list() only returns project-level connections
+// FIXED: Connection name uses resourceToken to match Azure's auto-generated format
+// Azure rejects 'binggrounding-for-${project_name}' and auto-generates 'binggrounding${resourceToken}'
 resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
-  name: 'binggrounding-for-${project_name}'
+  name: 'binggrounding${resourceToken}'
   parent: foundry_project
   properties: {
     category: 'BingLLMSearch'

@@ -16,6 +16,7 @@ param projectId int
 
 param bingAccountId string = ''
 param bingAccountEndpoint string = ''
+param resourceToken string
 
 resource foundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
   name: foundryName
@@ -48,6 +49,7 @@ module aiProject './ai-project.bicep' = {
 
     bingAccountId: bingAccountId
     bingAccountEndpoint: bingAccountEndpoint
+    resourceToken: resourceToken
   }
 }
 

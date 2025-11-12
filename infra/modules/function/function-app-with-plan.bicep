@@ -12,6 +12,7 @@ param logicAppsSubnetResourceId string
 param privateEndpointSubnetResourceId string
 param logicAppPrivateDnsZoneId string
 param virtualNetworkResourceId string
+param vnetAddressSpace string = '192.168.0.0/16'
 param myIpAddress string = ''
 param office365ConnectionRuntimeUrl string = ''
 param aiProjectEndpoint string = ''
@@ -306,6 +307,29 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
                     ipAddress: '${myIpAddress}/32'
                     name: 'My IP Address'
                     priority: 100
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow VNet traffic (AI Foundry agents in same VNet)'
+                    ipAddress: vnetAddressSpace
+                    name: 'VNet Traffic'
+                    priority: 200
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow Logic Apps Management (runtime operations)'
+                    tag: 'ServiceTag'
+                    ipAddress: 'LogicAppsManagement'
+                    name: 'LogicAppsManagement'
+                    priority: 300
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow Azure Connectors (Office 365 callbacks)'
+                    tag: 'ServiceTag'
+                    ipAddress: 'AzureConnectors'
+                    name: 'AzureConnectors'
+                    priority: 400
                   }
                 ]
                 ipSecurityRestrictionsDefaultAction: 'Deny'

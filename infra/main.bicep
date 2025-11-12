@@ -12,6 +12,7 @@ param myIpAddress string = ''
 param playwrightLocation string = 'eastasia'
 
 var resourceToken = toLower(uniqueString(resourceGroup().id, location))
+var vnetAddressSpace = '192.168.0.0/16' // Must match vnet.bicep default
 
 module identity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
   name: 'mgmtidentity-${uniqueString(deployment().name, location)}'
@@ -157,6 +158,7 @@ module project1 './modules/ai/ai-project-with-caphost.bicep' = {
     managedIdentityId: identity.outputs.resourceId
     bingAccountId: bingAccount.id
     bingAccountEndpoint: bingAccount.properties.endpoint
+    resourceToken: resourceToken
   }
 }
 
@@ -200,6 +202,7 @@ module logicAppsDeployment './modules/function/function-app-with-plan.bicep' = {
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.logAnalyticsWorkspaceId
     applicationInsightResourceId: logAnalytics.outputs.applicationInsightsId
     virtualNetworkResourceId: vnet.outputs.virtualNetworkId
+    vnetAddressSpace: vnetAddressSpace
     logicAppsSubnetResourceId: vnet.outputs.logicAppsSubnetId
     privateEndpointSubnetResourceId: vnet.outputs.peSubnetId
     logicAppPrivateDnsZoneId: dnsSites.outputs.resourceId
