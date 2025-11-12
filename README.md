@@ -185,8 +185,27 @@ Before starting, ensure you have:
 - **Windows 11** (or Windows 10 with latest updates)
 - **VS Code** with Python and Jupyter extensions installed
 - **Azure subscription** (for infrastructure deployment)
+- **Node.js 18+** (required for MCP notebook with Playwright browser automation)
 
-### Step 1: Install uv Package Manager
+### Step 1: Install Node.js
+
+Install Node.js for MCP browser automation support:
+
+```powershell
+# Install Node.js using Windows Package Manager
+winget install OpenJS.NodeJS.LTS
+```
+
+After installation, close and reopen PowerShell, then verify:
+
+```powershell
+node --version
+npm --version
+```
+
+**Expected output**: Version numbers for both commands (e.g., `v20.x.x` and `10.x.x`)
+
+### Step 2: Install uv Package Manager
 
 The `uv` package manager is the recommended tool for managing Python dependencies in this project. Install it using PowerShell:
 
@@ -225,7 +244,7 @@ To make this permanent, add `%USERPROFILE%\.cargo\bin` to your system PATH:
 6. Click OK on all dialogs
 7. Close and reopen PowerShell
 
-### Step 2: Get the Repository
+### Step 3: Get the Repository
 
 You have two options to get the repository code:
 
@@ -254,7 +273,7 @@ If you don't have Git installed or prefer not to use it:
    cd C:\path\to\extracted\azure-ai-foundry-agents
    ```
 
-### Step 3: Install Dependencies
+### Step 4: Install Dependencies
 
 Install Python dependencies using `uv`:
 
@@ -268,7 +287,7 @@ This command will:
 - Install all required packages from `pyproject.toml`
 - Lock dependencies in `uv.lock`
 
-### Step 4: Install Azure CLI Tools
+### Step 5: Install Azure CLI Tools
 
 Install the Azure Developer CLI and Azure CLI using Windows Package Manager:
 
@@ -282,7 +301,7 @@ winget install Microsoft.AzureCLI
 
 After installation, close and reopen PowerShell to refresh your environment.
 
-### Step 5: Deploy Azure Infrastructure
+### Step 6: Deploy Azure Infrastructure
 
 Deploy all Azure resources with one command:
 
@@ -307,7 +326,24 @@ The deployment provisions:
 - Networking resources (VNet, subnets, private endpoints)
 - Monitoring and logging resources (Log Analytics, App Insights)
 
-### Step 6: Select Jupyter Kernel in VS Code
+### Step 7: Install MCP Dependencies for Notebook 6
+
+Notebook 6 uses Playwright for browser automation via the MCP protocol. Windows requires explicit environment variable passing, so install these Node.js packages:
+
+```powershell
+# Install Playwright test framework
+npm install @playwright/test
+
+# Install Chromium browser binaries
+npx playwright install chromium
+
+# Install MCP package locally
+npm install @playwright/mcp
+```
+
+**Note**: Use the provided `6-mcp-windows.py` script instead of the notebook, as it correctly passes environment variables to the MCP subprocess.
+
+### Step 8: Select Jupyter Kernel in VS Code
 
 To run the notebooks in VS Code, you need to select the correct Python interpreter from your virtual environment:
 
@@ -324,7 +360,7 @@ To run the notebooks in VS Code, you need to select the correct Python interpret
 3. Choose "Python Environments"
 4. Select the `.venv\Scripts\python.exe` interpreter
 
-### Step 7: Verify Setup
+### Step 9: Verify Setup
 
 Run these verification commands to ensure everything is configured correctly:
 
@@ -344,7 +380,7 @@ Test-Path .env
 - `uv --version` should display version number
 - `Test-Path .env` should return: `True`
 
-### Step 8: Run Notebooks
+### Step 10: Run Notebooks
 
 You're all set! Open the notebooks in VS Code and run them sequentially:
 

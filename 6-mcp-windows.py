@@ -48,13 +48,13 @@ async def main():
     kernel = Kernel()
 
     # Use async context manager for MCP plugin
-    # Using locally installed @playwright/mcp (not @latest) so browsers are found
     async with MCPStdioPlugin(
         name="Playwright",
         command="npx",
-        args=["@playwright/mcp"],
+        args=["@playwright/mcp@latest"],
         description="MCP Stdio Plugin for Playwright",
         version="1.0.0",
+        env=os.environ.copy(),  # Pass all environment variables
     ) as playwright_mcp:
         # Add the plugin to kernel
         kernel.add_plugin(playwright_mcp, plugin_name="playwright")
@@ -86,9 +86,9 @@ async def main():
 
 if __name__ == "__main__":
     # Windows-specific event loop policy for proper subprocess handling
-    if asyncio.get_event_loop_policy().__class__.__name__ == 'WindowsProactorEventLoopPolicy':
-        # Use WindowsSelectorEventLoopPolicy for better subprocess support
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    # if asyncio.get_event_loop_policy().__class__.__name__ == 'WindowsProactorEventLoopPolicy':
+    #     # Use WindowsSelectorEventLoopPolicy for better subprocess support
+    #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     # Run the async main function
     asyncio.run(main())
