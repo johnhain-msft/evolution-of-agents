@@ -4,7 +4,7 @@ import os
 import requests
 from typing import Dict, Any
 from dotenv import load_dotenv
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 from azure.identity import DefaultAzureCredential
 from azure.ai.agents.models import (
@@ -108,7 +108,7 @@ class AzureStandardLogicAppTool:
             "servers": [{"url": server_url or "https://your-logic-app-url/paths"}],
             "security": [{"sig": []}],
             "paths": {
-                "/invoke": {
+                "/": {
                     "post": {
                         "description": f"Invoke {workflow_name} Logic App workflow",
                         "operationId": f"{operation_id}-invoke",
@@ -335,21 +335,22 @@ if __name__ == "__main__":
         query_params = parse_qs(parsed_callback.query)
         sig = query_params.get("sig", [None])[0]
 
-        # Remove /invoke from the end of the path to get the base path
-        # The OpenAPI spec defines path as "/invoke", so server URL should NOT include it
+        # Keep the full path including /invoke
+        # The OpenAPI spec defines path as "/", so server URL should include the full path
         base_url_path = parsed_callback.path
-        if base_url_path.endswith("/invoke"):
-            base_url_path = base_url_path[:-len("/invoke")]
 
         # Build query string with all parameters EXCEPT sig (which is handled by security scheme)
+        # URL-encode each parameter value
         query_parts = []
         for param_name, param_values in query_params.items():
             if param_name != "sig":
                 for value in param_values:
-                    query_parts.append(f"{param_name}={value}")
+                    # URL-encode the parameter value
+                    encoded_value = quote(value, safe='')
+                    query_parts.append(f"{param_name}={encoded_value}")
 
         # Construct server URL with query parameters embedded
-        # Final URL will be: server_url + "/invoke" + "&sig=..." from security scheme
+        # Final URL will be: server_url + "&sig=..." from security scheme
         base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{base_url_path}"
         if query_parts:
             base_callback_url += "?" + "&".join(query_parts)
