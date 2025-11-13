@@ -191,12 +191,18 @@ resource project_connection_azureai_search 'Microsoft.CognitiveServices/accounts
 // client.connections.list() only returns project-level connections
 // FIXED: Connection name uses resourceToken to match Azure's auto-generated format
 // Azure rejects 'binggrounding-for-${project_name}' and auto-generates 'binggrounding${resourceToken}'
+//
+// WORKAROUND: Using 'CustomKeys' category instead of 'BingLLMSearch'
+// Reason: BingLLMSearch has a known bug where connections created via Bicep aren't properly
+// registered in the project's connection index, causing "connection not found" errors
+// See: https://github.com/Azure/azure-sdk-for-python/issues/41768
+// Microsoft's recommended workaround uses CustomKeys with Bing API endpoint
 resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
   name: 'binggrounding${resourceToken}'
   parent: foundry_project
   properties: {
-    category: 'BingLLMSearch'
-    target: bingAccountEndpoint
+    category: 'CustomKeys'
+    target: 'https://api.bing.microsoft.com/'
     authType: 'ApiKey'
     credentials: {
       key: !empty(bingAccountId) ? listKeys(bingAccountId, '2025-05-01-preview').key1 : ''
@@ -205,6 +211,7 @@ resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/
       ApiType: 'Azure'
       ResourceId: bingAccountId
       location: 'global'
+      Type: 'BingGrounding'
     }
   }
 }
