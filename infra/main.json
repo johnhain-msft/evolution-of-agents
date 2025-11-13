@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "10923143897763014984"
+      "templateHash": "12401018977623189387"
     }
   },
   "parameters": {
@@ -549,7 +549,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "8438323456295524128"
+              "templateHash": "17287039230146930760"
             }
           },
           "parameters": {
@@ -656,7 +656,7 @@
                   ]
                 },
                 "dhcpOptions": "[if(empty(parameters('customDNS')), null(), createObject('dnsServers', createArray(parameters('customDNS'))))]",
-                "subnets": "[union(variables('extraAgentSubnetObjects'), createArray(createObject('name', parameters('agentSubnetName'), 'properties', createObject('addressPrefix', variables('agentSubnet'), 'delegations', createArray(createObject('name', 'Microsoft.app/environments', 'properties', createObject('serviceName', 'Microsoft.App/environments'))), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value))), createObject('name', parameters('peSubnetName'), 'properties', createObject('addressPrefix', variables('peSubnet'), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value))), createObject('name', variables('laSubnetName'), 'properties', createObject('addressPrefix', variables('laSubnet'), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value), 'delegations', createArray(createObject('name', 'Microsoft.Web/serverfarms', 'properties', createObject('serviceName', 'Microsoft.Web/serverfarms')))))))]"
+                "subnets": "[union(variables('extraAgentSubnetObjects'), createArray(createObject('name', parameters('agentSubnetName'), 'properties', createObject('addressPrefix', variables('agentSubnet'), 'delegations', createArray(createObject('name', 'Microsoft.app/environments', 'properties', createObject('serviceName', 'Microsoft.App/environments'))), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value))), createObject('name', parameters('peSubnetName'), 'properties', createObject('addressPrefix', variables('peSubnet'), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value))), createObject('name', variables('laSubnetName'), 'properties', createObject('addressPrefix', variables('laSubnet'), 'networkSecurityGroup', createObject('id', reference(resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment'), '2025-04-01').outputs.resourceId.value), 'delegations', createArray(createObject('name', 'Microsoft.Web/serverfarms', 'properties', createObject('serviceName', 'Microsoft.Web/serverfarms'))), 'serviceEndpoints', createArray(createObject('service', 'Microsoft.CognitiveServices', 'locations', createArray('*')))))))]"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Resources/deployments', 'networkSecurityGroupDeployment')]"
