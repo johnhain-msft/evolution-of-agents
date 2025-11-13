@@ -52,9 +52,8 @@ $bodyJson = @{
   }
 } | ConvertTo-Json -Depth 10 -Compress
 
-# Write body to temp file for az rest
 $tempFile = [System.IO.Path]::GetTempFileName()
-$bodyJson | Out-File -FilePath $tempFile -Encoding utf8 -NoNewline
+[System.IO.File]::WriteAllText($tempFile, $bodyJson, [System.Text.UTF8Encoding]::new($false))
 
 $apiUrl = "https://management.azure.com$CONNECTION_ID/accessPolicies/$POLICY_NAME" + "?api-version=2016-06-01"
 
