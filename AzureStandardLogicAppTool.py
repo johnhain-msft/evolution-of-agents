@@ -63,6 +63,9 @@ class AzureStandardLogicAppTool:
     ) -> Dict[str, Any]:
         """
         Generate an OpenAPI spec matching the provided Logic App schema example.
+
+        Note: The server_url should include all required query parameters (api-version, sp, sv)
+        except for 'sig' which is handled via the security scheme.
         """
         # Extract properties and required fields
         properties = {}
@@ -75,26 +78,9 @@ class AzureStandardLogicAppTool:
             if v.get("nullable", False) is False:
                 required.append(k)
 
-        parameters = [
-            {
-                "name": "api-version",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string", "default": "2022-05-01"},
-            },
-            {
-                "name": "sp",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string"},
-            },
-            {
-                "name": "sv",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string", "default": "1.0"},
-            },
-        ]
+        # No parameters needed - they're included in the server URL
+        # Only sig is handled via security scheme
+        parameters = []
 
         # Tool name must match pattern ^[a-zA-Z0-9_]+ (only alphanumeric and underscores)
         tool_name = workflow_name.replace("-", "_").replace(" ", "_")
@@ -289,16 +275,25 @@ def create_logic_app_tools(
         query_params = parse_qs(parsed_callback.query)
         sig = query_params.get("sig", [None])[0]
 
-        for param in openapi_spec["paths"]["/invoke"]["post"]["parameters"]:
-            param_name = param["name"]
-            if param_name in query_params:
-                param["schema"]["default"] = query_params[param_name][0]
-
+        # Remove /invoke from the end of the path to get the base path
+        # The OpenAPI spec defines path as "/invoke", so server URL should NOT include it
         base_url_path = parsed_callback.path
         if base_url_path.endswith("/invoke"):
             base_url_path = base_url_path[:-len("/invoke")]
 
+        # Build query string with all parameters EXCEPT sig (which is handled by security scheme)
+        query_parts = []
+        for param_name, param_values in query_params.items():
+            if param_name != "sig":
+                for value in param_values:
+                    query_parts.append(f"{param_name}={value}")
+
+        # Construct server URL with query parameters embedded
+        # Final URL will be: server_url + "/invoke" + "&sig=..." from security scheme
         base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{base_url_path}"
+        if query_parts:
+            base_callback_url += "?" + "&".join(query_parts)
+
         openapi_spec["servers"] = [{"url": base_callback_url}]
         connection_name = f"openapi-logicapp-{logic_app_name}-{workflow_name}"
 

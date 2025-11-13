@@ -74,6 +74,9 @@ class AzureStandardLogicAppTool:
     ) -> Dict[str, Any]:
         """
         Generate an OpenAPI spec matching the provided Logic App schema example.
+
+        Note: The server_url should include all required query parameters (api-version, sp, sv)
+        except for 'sig' which is handled via the security scheme.
         """
         # Extract properties and required fields
         properties = {}
@@ -86,31 +89,10 @@ class AzureStandardLogicAppTool:
             if v.get("nullable", False) is False:
                 required.append(k)
 
-        # Query parameters from Logic Apps callback URL
-        # These will be defined as parameters so Azure AI Agents can append them properly
-        # Extract default values from the callback URL
-        parameters = [
-            {
-                "name": "api-version",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string", "default": "2022-05-01"},
-            },
-            {
-                "name": "sp",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string"},
-            },
-            {
-                "name": "sv",
-                "in": "query",
-                "required": True,
-                "schema": {"type": "string", "default": "1.0"},
-            },
-        ]
+        # No parameters needed - they're included in the server URL
+        # Only sig is handled via security scheme
+        parameters = []
 
-        # Use /invoke as the path, as in the example
         # Tool name must match pattern ^[a-zA-Z0-9_]+ (only alphanumeric and underscores)
         tool_name = workflow_name.replace("-", "_").replace(" ", "_")
         # OperationId can use hyphens for uniqueness and readability
@@ -348,27 +330,31 @@ if __name__ == "__main__":
         )
         print(f"Found Callback URL for workflow '{workflow_name}'")
 
-        # Parse callback URL - extract query params for use as parameter defaults
+        # Parse callback URL - extract query params
         parsed_callback = urlparse(callback_url)
         query_params = parse_qs(parsed_callback.query)
         sig = query_params.get("sig", [None])[0]
-        sp_value = query_params.get("sp", [None])[0]
 
-        # Update sp parameter default with actual value from callback URL
-        for param in openapi_spec["paths"]["/invoke"]["post"]["parameters"]:
-            if param["name"] == "sp" and sp_value:
-                param["schema"]["default"] = sp_value
-
-        # Server URL should NOT include /invoke or query params
-        # Path will be /invoke, and query params will be appended by Azure AI Agents
-        # Remove /invoke from the end of the path
+        # Remove /invoke from the end of the path to get the base path
+        # The OpenAPI spec defines path as "/invoke", so server URL should NOT include it
         base_url_path = parsed_callback.path
         if base_url_path.endswith("/invoke"):
-            base_url_path = base_url_path[: -len("/invoke")]
+            base_url_path = base_url_path[:-len("/invoke")]
 
+        # Build query string with all parameters EXCEPT sig (which is handled by security scheme)
+        query_parts = []
+        for param_name, param_values in query_params.items():
+            if param_name != "sig":
+                for value in param_values:
+                    query_parts.append(f"{param_name}={value}")
+
+        # Construct server URL with query parameters embedded
+        # Final URL will be: server_url + "/invoke" + "&sig=..." from security scheme
         base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{base_url_path}"
+        if query_parts:
+            base_callback_url += "?" + "&".join(query_parts)
 
-        # update openapi spec server URL (without query params)
+        # update openapi spec server URL (with query params except sig)
         openapi_spec["servers"] = [{"url": base_callback_url}]
         connection_name = f"openapi-logicapp-{logic_app_name}-{workflow_name}"
 
