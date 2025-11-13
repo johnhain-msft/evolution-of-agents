@@ -22,7 +22,6 @@ resource office365Connection 'Microsoft.Web/connections@2018-07-01-preview' = {
   }
 }
 
-// Access Policy - grants Logic App access to the API connection
 resource accessPolicy 'Microsoft.Web/connections/accessPolicies@2016-06-01' = {
   name: guid(office365Connection.id, logicAppPrincipalId)
   parent: office365Connection

@@ -331,14 +331,6 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
                     name: 'AzureConnectors'
                     priority: 400
                   }
-                  {
-                    action: 'Allow'
-                    description: 'Allow Cognitive Services (AI Foundry agent tool calls)'
-                    tag: 'ServiceTag'
-                    ipAddress: 'CognitiveServices'
-                    name: 'CognitiveServices'
-                    priority: 500
-                  }
                 ]
                 ipSecurityRestrictionsDefaultAction: 'Deny'
                 scmIpSecurityRestrictionsDefaultAction: 'Deny'
