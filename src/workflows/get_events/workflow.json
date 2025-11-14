@@ -25,10 +25,9 @@
                         }
                     },
                     "method": "get",
-                    "path": "/datasets/calendars/v3/tables/@{encodeURIComponent(first(body('Get_calendars')?['value'])?['id'])}/calendarview",
+                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(first(body('Get_calendars')?['value'])?['Name']))}/items",
                     "queries": {
-                        "startDateTime": "@{triggerBody()?['startDateTime']}",
-                        "endDateTime": "@{triggerBody()?['endDateTime']}",
+                        "$filter": "start/dateTime ge '@{triggerBody()?['startDateTime']}' and end/dateTime le '@{triggerBody()?['endDateTime']}'",
                         "$orderby": "start/dateTime",
                         "$top": "@{coalesce(triggerBody()?['maxResults'], 10)}"
                     }

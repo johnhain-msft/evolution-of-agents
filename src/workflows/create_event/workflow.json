@@ -25,11 +25,12 @@
                         }
                     },
                     "method": "post",
-                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(first(body('Get_calendars')?['value'])?['id'])}/items",
+                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(first(body('Get_calendars')?['value'])?['Name']))}/items",
                     "body": {
                         "subject": "@{triggerBody()?['subject']}",
                         "start": "@{triggerBody()?['start']}",
                         "end": "@{triggerBody()?['end']}",
+                        "timeZone": "@{coalesce(triggerBody()?['timeZone'], 'UTC')}",
                         "body": "@{triggerBody()?['body']}",
                         "location": "@{triggerBody()?['location']}",
                         "attendees": "@{triggerBody()?['attendees']}"
@@ -79,6 +80,10 @@
                             "end": {
                                 "type": "string",
                                 "description": "Event end time (ISO 8601 format)"
+                            },
+                            "timeZone": {
+                                "type": "string",
+                                "description": "Time zone for the event (default: UTC)"
                             },
                             "body": {
                                 "type": "string",
