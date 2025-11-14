@@ -51,15 +51,15 @@ if ([string]::IsNullOrEmpty($graphSpId)) {
 
 # Grant Calendars.Read permission
 try {
-    $bodyRead = @{
+    $bodyRead = (@{
         principalId = $principalId
         resourceId = $graphSpId
         appRoleId = $calendarsReadId
-    } | ConvertTo-Json -Compress
+    } | ConvertTo-Json -Compress).Replace('"', '\"')
 
     az rest --method POST `
         --uri "https://graph.microsoft.com/v1.0/servicePrincipals/$graphSpId/appRoleAssignedTo" `
-        --body `"$bodyRead`" `
+        --body $bodyRead `
         --headers "Content-Type=application/json" | Out-Null
     Write-Host "✓ Granted Calendars.Read permission" -ForegroundColor Green
 } catch {
@@ -68,15 +68,15 @@ try {
 
 # Grant Calendars.ReadWrite permission
 try {
-    $bodyReadWrite = @{
+    $bodyReadWrite = (@{
         principalId = $principalId
         resourceId = $graphSpId
         appRoleId = $calendarsReadWriteId
-    } | ConvertTo-Json -Compress
+    } | ConvertTo-Json -Compress).Replace('"', '\"')
 
     az rest --method POST `
         --uri "https://graph.microsoft.com/v1.0/servicePrincipals/$graphSpId/appRoleAssignedTo" `
-        --body `"$bodyReadWrite`" `
+        --body $bodyReadWrite `
         --headers "Content-Type=application/json" | Out-Null
     Write-Host "✓ Granted Calendars.ReadWrite permission" -ForegroundColor Green
 } catch {
