@@ -1,16 +1,22 @@
 from datetime import date
 from dotenv import load_dotenv
 from azure.identity.aio import DefaultAzureCredential, AzureDeveloperCliCredential
+from azure.identity import DefaultAzureCredential as DefaultAzureCredentialSync, AzureDeveloperCliCredential as AzureDeveloperCliCredentialSync
 import os
 from semantic_kernel import Kernel
 from semantic_kernel.agents import (
     AzureAIAgent,
     AzureAIAgentSettings,
+    ChatCompletionAgent,
+    Agent,
 )
+from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import AzureChatCompletion
 from semantic_kernel.functions.kernel_plugin import KernelPlugin
 from azure.ai.agents.models import ToolDefinition, Tool, ToolResources
 from semantic_kernel.agents import (
     AzureAIAgentThread,
+    ChatHistoryAgentThread,
+    AgentThread
 )
 from azure.ai.projects.aio import AIProjectClient
 from semantic_kernel.contents import FunctionCallContent, FunctionResultContent
@@ -32,6 +38,7 @@ deployment_name = os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME")
 api_version = os.environ.get("AZURE_OPENAI_API_VERSION", None)
 tenant_id = os.environ.get("AZURE_TENANT_ID", None)
 is_debug = os.environ.get("DEBUG", "false").lower() == "true"
+foundry_name = os.environ.get("AZURE_AI_FOUNDRY_NAME", None)
 
 ai_agent_settings = AzureAIAgentSettings(
     endpoint=endpoint,
@@ -45,6 +52,11 @@ creds = (
     else DefaultAzureCredential()
 )
 
+creds_sync = (
+    AzureDeveloperCliCredentialSync(tenant_id=os.environ.get("AZURE_TENANT_ID", None))
+    if os.environ.get("USE_AZURE_DEV_CLI") == "true"
+    else DefaultAzureCredentialSync()
+)
 
 def get_credentials():
     return creds
@@ -79,6 +91,27 @@ async def get_project_client() -> AIProjectClient:
             )
     return client
 
+async def create_agent_chat_completions(
+    agent_name: str,
+    agent_instructions: str,
+    client: AIProjectClient,
+    tools: list[Tool | ToolDefinition] = [],
+    plugins: list[KernelPlugin] = [],
+    kernel: Kernel = None,
+) -> Agent:
+    agent = ChatCompletionAgent(
+        name=agent_name,
+        instructions=agent_instructions,
+        kernel=kernel if kernel else Kernel(),
+        plugins=plugins,
+        service=AzureChatCompletion(
+            deployment_name=ai_agent_settings.model_deployment_name,
+            api_version=ai_agent_settings.api_version,
+            endpoint=f"https://{foundry_name}.cognitiveservices.azure.com/",
+            credential=creds_sync
+        )
+    )
+    return agent
 
 async def create_agent(
     agent_name: str,
@@ -182,38 +215,75 @@ async def get_connection_by_name(client: AIProjectClient, name: str) -> str:
 
 async def test_agent(
     client: AIProjectClient,
-    agent: AzureAIAgent,
+    agent: Agent,
     user_message: str,
-    thread: AzureAIAgentThread = None,
-) -> AzureAIAgentThread:
-    try:
+    thread: AgentThread = None,
+) -> AgentThread:
+    """Test agent and ensure it completes all responses before returning."""
+
+    if isinstance(agent, AzureAIAgent):
         thread = thread or AzureAIAgentThread(client=client)
+    else:
+        thread = thread or ChatHistoryAgentThread()
+    
+    try:
+        print(f"Starting agent conversation with message: {user_message}")
+        
+        # Ensure we process ALL responses from the agent
+        response_count = 0
         async for agent_response in agent.invoke(
             messages=user_message,
             thread=thread,
             additional_instructions="Today is " + date.today().strftime("%Y-%m-%d"),
             on_intermediate_message=on_intermediate_message,
         ):
-            for item in agent_response.items or []:
-                if isinstance(item, TextContent):
-                    if item.metadata.get("code", None):
-                        print("------- CODE START ----------")
-                        print(item.text)
-                        print("------- CODE END ------------")
+            response_count += 1
+            print(f"Processing response #{response_count}")
+            
+            # Handle case where items might be None or empty
+            items = agent_response.items or []
+            
+            if not items:
+                print(f"Response #{response_count}: No items in response")
+                continue
+                
+            for item in items:
+                try:
+                    if isinstance(item, TextContent):
+                        if item.metadata.get("code", None):
+                            print("------- CODE START ----------")
+                            print(item.text)
+                            print("------- CODE END ------------")
+                        else:
+                            print(f"Agent: {item.text}")
+                    elif isinstance(item, FileReferenceContent):
+                        await client.agents.files.save(
+                            file_id=item.file_id,
+                            file_name=f"downloaded__{item.file_id}.png",
+                        )
+                        print(
+                            f"Downloaded file: {item.file_id} saved as downloaded__{item.file_id}.png"
+                        )
+                        try:
+                            from IPython.display import Image, display
+                            display(Image(f"downloaded__{item.file_id}.png"))
+                        except ImportError:
+                            print("IPython not available, file saved but not displayed")
                     else:
-                        print(f"Agent: {item.text}")
-                elif isinstance(item, FileReferenceContent):
-                    await client.agents.files.save(
-                        file_id=item.file_id,
-                        file_name=f"downloaded__{item.file_id}.png",
-                    )
-                    print(
-                        f"Downloaded file: {item.file_id} saved as downloaded__{item.file_id}.png"
-                    )
-                    from IPython.display import Image, display
-
-                    display(Image(f"downloaded__{item.file_id}.png"))
+                        print(f"Other content type: {type(item).__name__}: {item}")
+                except Exception as item_error:
+                    print(f"Error processing item: {item_error}")
+                    continue
+            
+            # Update thread reference for each response
             thread = agent_response.thread
+        
+        print(f"Agent conversation completed. Processed {response_count} responses.")
         return thread
+        
     except Exception as e:
-        print(f"Agent: {e}")
+        print(f"Agent error: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        # Still return the thread even if there was an error
+        return thread

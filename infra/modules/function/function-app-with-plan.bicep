@@ -1,5 +1,7 @@
 // Deploys a Function App with its own App Service Plan and Storage Account
 // Public access is disabled. No VNET integration. Uses zip deployment for source code.
+import * as types from '../types/types.bicep'
+
 param name string
 param location string
 param managedIdentityId string
@@ -10,8 +12,16 @@ param logicAppsSubnetResourceId string
 param privateEndpointSubnetResourceId string
 param logicAppPrivateDnsZoneId string
 param virtualNetworkResourceId string
+param vnetAddressSpace string = '192.168.0.0/16'
 param myIpAddress string = ''
+param office365ConnectionRuntimeUrl string = ''
+param aiProjectEndpoint string = ''
+param aiFoundryName string = ''
+param aiProjectName string = ''
 param tags object = {}
+
+@description('Existing DNS zones to reuse instead of creating new ones')
+param existingDnsZones types.DnsZonesType = types.DefaultDNSZones
 
 // --------------------------------------------------------------------------------------------------------------
 // split managed identity resource ID to get the name
@@ -100,7 +110,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.25.1' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: storagePrivateDns[0].outputs.resourceId
+              privateDnsZoneResourceId: blobDnsZoneId
             }
           ]
         }
@@ -111,7 +121,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.25.1' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: storagePrivateDns[1].outputs.resourceId
+              privateDnsZoneResourceId: queuePrivateDns.outputs.resourceId
             }
           ]
         }
@@ -122,7 +132,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.25.1' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: storagePrivateDns[2].outputs.resourceId
+              privateDnsZoneResourceId: tablePrivateDns.outputs.resourceId
             }
           ]
         }
@@ -133,7 +143,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.25.1' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: storagePrivateDns[3].outputs.resourceId
+              privateDnsZoneResourceId: filePrivateDns.outputs.resourceId
             }
           ]
         }
@@ -142,35 +152,67 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.25.1' = {
   }
 }
 
-var storageZones = [
-  {
-    name: 'privatelink.blob.${environment().suffixes.storage}'
-  }
-  {
-    name: 'privatelink.queue.${environment().suffixes.storage}'
-  }
-  {
-    name: 'privatelink.table.${environment().suffixes.storage}'
-  }
-  {
-    name: 'privatelink.file.${environment().suffixes.storage}'
-  }
-]
+// Storage DNS zones - check if blob zone already exists (created by ai_dependencies module)
+var blobDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
+var queueDnsZoneName = 'privatelink.queue.${environment().suffixes.storage}'
+var tableDnsZoneName = 'privatelink.table.${environment().suffixes.storage}'
+var fileDnsZoneName = 'privatelink.file.${environment().suffixes.storage}'
 
-module storagePrivateDns 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
-  for zone in storageZones: {
-    name: 'privateDnsZoneDeployment-${zone.name}'
-    params: {
-      // Required parameters
-      name: zone.name
-      // Non-required parameters
-      location: 'global'
-      virtualNetworkLinks: [
-        { virtualNetworkResourceId: virtualNetworkResourceId }
-      ]
-    }
+var blobDnsZone = existingDnsZones[?blobDnsZoneName]
+
+// Reference existing blob DNS zone if it exists
+resource blobPrivateDnsZoneExisting 'Microsoft.Network/privateDnsZones@2020-06-01' existing = if (!empty(blobDnsZone)) {
+  name: blobDnsZoneName
+  scope: resourceGroup(blobDnsZone!.subscriptionId, blobDnsZone!.resourceGroupName)
+}
+
+// Create blob DNS zone only if it doesn't already exist
+module blobPrivateDnsZoneNew 'br/public:avm/res/network/private-dns-zone:0.7.1' = if (empty(blobDnsZone)) {
+  name: 'privateDnsZoneDeployment-blob'
+  params: {
+    name: blobDnsZoneName
+    location: 'global'
+    virtualNetworkLinks: [
+      { virtualNetworkResourceId: virtualNetworkResourceId }
+    ]
   }
-]
+}
+
+var blobDnsZoneId = empty(blobDnsZone) ? blobPrivateDnsZoneNew.outputs.resourceId : blobPrivateDnsZoneExisting.id
+
+// Create queue, table, file DNS zones (unique to Logic App storage)
+module queuePrivateDns 'br/public:avm/res/network/private-dns-zone:0.7.1' = {
+  name: 'privateDnsZoneDeployment-queue'
+  params: {
+    name: queueDnsZoneName
+    location: 'global'
+    virtualNetworkLinks: [
+      { virtualNetworkResourceId: virtualNetworkResourceId }
+    ]
+  }
+}
+
+module tablePrivateDns 'br/public:avm/res/network/private-dns-zone:0.7.1' = {
+  name: 'privateDnsZoneDeployment-table'
+  params: {
+    name: tableDnsZoneName
+    location: 'global'
+    virtualNetworkLinks: [
+      { virtualNetworkResourceId: virtualNetworkResourceId }
+    ]
+  }
+}
+
+module filePrivateDns 'br/public:avm/res/network/private-dns-zone:0.7.1' = {
+  name: 'privateDnsZoneDeployment-file'
+  params: {
+    name: fileDnsZoneName
+    location: 'global'
+    virtualNetworkLinks: [
+      { virtualNetworkResourceId: virtualNetworkResourceId }
+    ]
+  }
+}
 
 // module serverfarm 'br/public:avm/res/web/serverfarm:0.4.1' = {
 //   name: 'serverfarmDeployment'
@@ -201,7 +243,10 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
     kind: 'functionapp,workflowapp'
     name: '${name}-${resourceToken}'
     serverFarmResourceId: serverfarmForLogicApps.id
-    managedIdentities: { userAssignedResourceIds: [managedIdentityId] }
+    managedIdentities: {
+      systemAssigned: true
+      userAssignedResourceIds: [managedIdentityId]
+    }
     publicNetworkAccess: 'Enabled'
 
     virtualNetworkSubnetResourceId: logicAppsSubnetResourceId
@@ -224,7 +269,8 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
             FUNCTIONS_WORKER_RUNTIME: 'dotnet'
             APP_KIND: 'workflowApp'
             // https://review.learn.microsoft.com/en-us/azure/logic-apps/create-single-tenant-workflows-azure-portal?branch=main&branchFallbackFrom=pr-en-us-279972#set-up-managed-identity-access-to-your-storage-account
-            AZURE_CLIENT_ID: identity.properties.clientId
+            // AZURE_CLIENT_ID removed - when not set, defaults to system-assigned identity (required for agent connections)
+            // Storage explicitly uses user-assigned via AzureWebJobsStorage__clientId and __managedIdentityResourceId
             AzureWebJobsStorage__credential: 'managedIdentity'
             AzureWebJobsStorage__credentialType: 'managedIdentity'
             AzureWebJobsStorage__managedIdentityResourceId: managedIdentityId
@@ -234,6 +280,14 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
             WEBSITE_NODE_DEFAULT_VERSION: '~22'
             AzureFunctionsJobHost__extensionBundle__id: 'Microsoft.Azure.Functions.ExtensionBundle.Workflows'
             AzureFunctionsJobHost__extensionBundle__version: '[1.*, 2.0.0)'
+            WORKFLOWS_SUBSCRIPTION_ID: subscription().subscriptionId
+            WORKFLOWS_RESOURCE_GROUP_NAME: resourceGroup().name
+            WORKFLOWS_LOCATION_NAME: location
+            OFFICE365_CONNECTION_RUNTIME_URL: office365ConnectionRuntimeUrl
+            AI_PROJECT_ENDPOINT: aiProjectEndpoint
+            AI_FOUNDRY_NAME: aiFoundryName
+            AI_PROJECT_NAME: aiProjectName
+            AZURE_CLIENT_ID: '' // Empty string explicitly specifies system-assigned identity for agent connections
           }
           storageAccountResourceId: storageAccount.outputs.resourceId
           storageAccountUseIdentityAuthentication: true
@@ -253,6 +307,29 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
                     ipAddress: '${myIpAddress}/32'
                     name: 'My IP Address'
                     priority: 100
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow VNet traffic (AI Foundry agents in same VNet)'
+                    ipAddress: vnetAddressSpace
+                    name: 'VNet Traffic'
+                    priority: 200
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow Logic Apps Management (runtime operations)'
+                    tag: 'ServiceTag'
+                    ipAddress: 'LogicAppsManagement'
+                    name: 'LogicAppsManagement'
+                    priority: 300
+                  }
+                  {
+                    action: 'Allow'
+                    description: 'Allow Azure Connectors (Office 365 callbacks)'
+                    tag: 'ServiceTag'
+                    ipAddress: 'AzureConnectors'
+                    name: 'AzureConnectors'
+                    priority: 400
                   }
                 ]
                 ipSecurityRestrictionsDefaultAction: 'Deny'
@@ -294,8 +371,9 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
 
 output storageAccountName string = storageAccount.outputs.name
 output planName string = serverfarmForLogicApps.name
-output dnsBlobZoneId string = storagePrivateDns[0].outputs.resourceId
+output dnsBlobZoneId string = blobDnsZoneId
 output logicAppName string = logicApp.outputs.name
 output logicAppResourceId string = logicApp.outputs.resourceId
+output logicAppSystemAssignedPrincipalId string = logicApp.outputs.systemAssignedMIPrincipalId
 output subscriptionId string = subscription().subscriptionId
 output logicAppResourceGroupName string = logicApp.outputs.resourceGroupName

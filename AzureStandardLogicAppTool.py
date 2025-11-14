@@ -1,7 +1,7 @@
 import json
 import requests
 from typing import Dict, Any
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 from azure.identity import DefaultAzureCredential
 from azure.ai.agents.models import (
@@ -63,6 +63,9 @@ class AzureStandardLogicAppTool:
     ) -> Dict[str, Any]:
         """
         Generate an OpenAPI spec matching the provided Logic App schema example.
+
+        Note: The server_url should include all required query parameters (api-version, sp, sv)
+        except for 'sig' which is handled via the security scheme.
         """
         # Extract properties and required fields
         properties = {}
@@ -75,52 +78,29 @@ class AzureStandardLogicAppTool:
             if v.get("nullable", False) is False:
                 required.append(k)
 
-        # Standard Logic App query parameters
-        parameters = [
-            {
-                "name": "api-version",
-                "in": "query",
-                "description": "`2022-05-01` is the most common generally available version",
-                "required": True,
-                "schema": {"type": "string", "default": "2022-05-01"},
-                "example": "2022-05-01",
-            },
-            {
-                "name": "sv",
-                "in": "query",
-                "description": "The version number",
-                "required": True,
-                "schema": {"type": "string", "default": "1.0"},
-                "example": "1.0",
-            },
-            {
-                "name": "sp",
-                "in": "query",
-                "description": "The permissions",
-                "required": True,
-                "schema": {
-                    "type": "string",
-                    "default": "%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun",
-                },
-                "example": "%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun",
-            },
-        ]
+        # No parameters needed - they're included in the server URL
+        # Only sig is handled via security scheme
+        parameters = []
 
-        # Use /invoke as the path, as in the example
+        # Tool name must match pattern ^[a-zA-Z0-9_]+ (only alphanumeric and underscores)
+        tool_name = workflow_name.replace("-", "_").replace(" ", "_")
+        # OperationId can use hyphens for uniqueness and readability
+        operation_id = workflow_name.replace("_", "-").replace(" ", "-")
+
         openapi = {
             "openapi": "3.0.3",
             "info": {
                 "version": "1.0.0.0",
-                "title": workflow_name.replace("_", "-"),
-                "description": workflow_name.replace("_", "-"),
+                "title": tool_name,
+                "description": f"Logic App workflow: {workflow_name}",
             },
             "servers": [{"url": server_url or "https://your-logic-app-url/paths"}],
             "security": [{"sig": []}],
             "paths": {
-                "/invoke": {
+                "/": {
                     "post": {
-                        "description": workflow_name.replace("_", "-"),
-                        "operationId": "When_a_HTTP_request_is_received-invoke",
+                        "description": f"Invoke {workflow_name} Logic App workflow",
+                        "operationId": f"{operation_id}-invoke",
                         "parameters": parameters,
                         "responses": {
                             "200": {
@@ -290,21 +270,30 @@ def create_logic_app_tools(
         callback_url = logic_app_tool.get_workflow_callback_url(
             logic_app_name, workflow_name, trigger_name
         )
-        # print(f"Found Callback URL for workflow '{workflow_name}'")
 
-        # parse callback URL to get the base URL
         parsed_callback = urlparse(callback_url)
         query_params = parse_qs(parsed_callback.query)
         sig = query_params.get("sig", [None])[0]
 
-        base_callback_url = (
-            f"{parsed_callback.scheme}://{parsed_callback.netloc}{parsed_callback.path}"
-        )
-        # remove /invoke from path
-        if base_callback_url.endswith("/invoke"):
-            base_callback_url = base_callback_url[: -len("/invoke")]
+        # Keep the full path including /invoke
+        # The OpenAPI spec defines path as "/", so server URL should include the full path
+        base_url_path = parsed_callback.path
 
-        # update openapi spec server URL
+        # Build query string with all parameters INCLUDING sig
+        # URL-encode each parameter value
+        query_parts = []
+        for param_name, param_values in query_params.items():
+            for value in param_values:
+                # URL-encode the parameter value
+                encoded_value = quote(value, safe='')
+                query_parts.append(f"{param_name}={encoded_value}")
+
+        # Construct server URL with all query parameters (including sig) embedded
+        # This creates the complete callback URL directly in the server URL
+        base_callback_url = f"{parsed_callback.scheme}://{parsed_callback.netloc}{base_url_path}"
+        if query_parts:
+            base_callback_url += "?" + "&".join(query_parts)
+
         openapi_spec["servers"] = [{"url": base_callback_url}]
         connection_name = f"openapi-logicapp-{logic_app_name}-{workflow_name}"
 
@@ -326,11 +315,13 @@ def create_logic_app_tools(
         )
 
         # 6. Create OpenAPI tool and invoke
+        # Tool name must match ^[a-zA-Z0-9_]+ pattern (underscores, no hyphens)
+        tool_name = workflow_name.replace("-", "_").replace(" ", "_")
         openapi_tool = OpenApiTool(
-            name=workflow_name.replace("-", "_").replace(" ", "_"),
+            name=tool_name,
             spec=openapi_spec,
             auth=auth,
-            description=f"{workflow_name} OpenAPI tool",
+            description=f"{workflow_name} Logic App workflow tool",
             # allowed_tools=[],  # Optional: specify allowed tools
         )
         openapi_tools.append(openapi_tool)

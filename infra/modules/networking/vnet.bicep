@@ -126,6 +126,12 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
               }
             }
           ]
+          serviceEndpoints: [
+            {
+              service: 'Microsoft.CognitiveServices'
+              locations: ['*']
+            }
+          ]
         }
       }
     ])

@@ -4,7 +4,7 @@ param aiSearchConnection string = ''
 param aiFoundryConnectionName string = ''
 param projectName string
 param accountName string
-param projectCapHost string = 'projcaphost'
+param projectCapHost string = 'project-caphost-${uniqueString(resourceGroup().id, projectName)}'
 
 var threadStorageConnections = empty(cosmosDBConnection) ? [] : ['${cosmosDBConnection}']
 var storageConnections = empty(azureStorageConnection) ? [] : ['${azureStorageConnection}']

@@ -1,0 +1,320 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "3763431729098872762"
+    }
+  },
+  "parameters": {
+    "foundry_name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "project_name": {
+      "type": "string"
+    },
+    "project_description": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "managedIdentityId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "existingAiResourceId": {
+      "type": "string",
+      "nullable": true,
+      "metadata": {
+        "description": "The resource ID of the existing AI resource."
+      }
+    },
+    "existingAiKind": {
+      "type": "string",
+      "defaultValue": "AIServices",
+      "allowedValues": [
+        "AzureOpenAI",
+        "AIServices"
+      ],
+      "metadata": {
+        "description": "The Kind of AI Service, can be \"AzureOpenAI\" or \"AIServices\""
+      }
+    },
+    "aiSearchName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "aiSearchServiceResourceGroupName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "aiSearchServiceSubscriptionId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "cosmosDBName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "cosmosDBSubscriptionId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "cosmosDBResourceGroupName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "azureStorageName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "azureStorageSubscriptionId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "azureStorageResourceGroupName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "createHubCapabilityHost": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "usingFoundryAiConnection": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Set to true to use the AI Foundry connection for the project, false to use the project connection."
+      }
+    }
+  },
+  "variables": {
+    "identityParts": "[split(parameters('managedIdentityId'), '/')]",
+    "managedIdentityName": "[if(greater(length(variables('identityParts')), 0), variables('identityParts')[sub(length(variables('identityParts')), 1)], '')]",
+    "byoAiProjectConnectionName": "[format('aiConnection-project-for-{0}', parameters('project_name'))]",
+    "byoAiFoundryConnectionName": "[format('aiConnection-foundry-for-{0}', parameters('foundry_name'))]",
+    "existingAiResourceIdParts": "[split(coalesce(parameters('existingAiResourceId'), ''), '/')]",
+    "existingAiResourceIdSubId": "[if(empty(parameters('existingAiResourceId')), '', variables('existingAiResourceIdParts')[2])]",
+    "existingAiResourceIdRgName": "[if(empty(parameters('existingAiResourceId')), '', variables('existingAiResourceIdParts')[4])]",
+    "existingAiResourceIdName": "[if(empty(parameters('existingAiResourceId')), '', variables('existingAiResourceIdParts')[8])]"
+  },
+  "resources": {
+    "identity": {
+      "condition": "[not(empty(variables('managedIdentityName')))]",
+      "existing": true,
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-07-31-preview",
+      "name": "[variables('managedIdentityName')]"
+    },
+    "existingAiResource": {
+      "condition": "[not(empty(parameters('existingAiResourceId')))]",
+      "existing": true,
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "subscriptionId": "[variables('existingAiResourceIdSubId')]",
+      "resourceGroup": "[variables('existingAiResourceIdRgName')]",
+      "name": "[variables('existingAiResourceIdName')]"
+    },
+    "foundry": {
+      "existing": true,
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[parameters('foundry_name')]"
+    },
+    "searchService": {
+      "condition": "[not(empty(parameters('aiSearchName')))]",
+      "existing": true,
+      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2024-06-01-preview",
+      "subscriptionId": "[parameters('aiSearchServiceSubscriptionId')]",
+      "resourceGroup": "[parameters('aiSearchServiceResourceGroupName')]",
+      "name": "[parameters('aiSearchName')]"
+    },
+    "cosmosDBAccount": {
+      "condition": "[not(empty(parameters('cosmosDBName')))]",
+      "existing": true,
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2024-12-01-preview",
+      "subscriptionId": "[parameters('cosmosDBSubscriptionId')]",
+      "resourceGroup": "[parameters('cosmosDBResourceGroupName')]",
+      "name": "[parameters('cosmosDBName')]"
+    },
+    "storageAccount": {
+      "condition": "[not(empty(parameters('azureStorageName')))]",
+      "existing": true,
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "subscriptionId": "[parameters('azureStorageSubscriptionId')]",
+      "resourceGroup": "[parameters('azureStorageResourceGroupName')]",
+      "name": "[parameters('azureStorageName')]"
+    },
+    "foundry_project": {
+      "type": "Microsoft.CognitiveServices/accounts/projects",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}', parameters('foundry_name'), parameters('project_name'))]",
+      "tags": "[parameters('tags')]",
+      "location": "[parameters('location')]",
+      "identity": "[if(not(empty(parameters('managedIdentityId'))), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('managedIdentityId')), createObject())), createObject('type', 'SystemAssigned'))]",
+      "properties": {
+        "description": "[parameters('project_description')]",
+        "displayName": "[parameters('display_name')]"
+      }
+    },
+    "byoAoaiConnectionFoundry": {
+      "condition": "[and(not(empty(parameters('existingAiResourceId'))), parameters('usingFoundryAiConnection'))]",
+      "type": "Microsoft.CognitiveServices/accounts/connections",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}', parameters('foundry_name'), variables('byoAiFoundryConnectionName'))]",
+      "properties": {
+        "category": "[parameters('existingAiKind')]",
+        "target": "[reference('existingAiResource').endpoint]",
+        "authType": "AAD",
+        "metadata": {
+          "ApiType": "Azure",
+          "ResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('existingAiResourceIdSubId'), variables('existingAiResourceIdRgName')), 'Microsoft.CognitiveServices/accounts', variables('existingAiResourceIdName'))]",
+          "location": "[reference('existingAiResource', '2023-05-01', 'full').location]"
+        }
+      },
+      "dependsOn": [
+        "existingAiResource"
+      ]
+    },
+    "byoAoaiConnection": {
+      "condition": "[and(not(empty(parameters('existingAiResourceId'))), not(parameters('usingFoundryAiConnection')))]",
+      "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('foundry_name'), parameters('project_name'), variables('byoAiProjectConnectionName'))]",
+      "properties": {
+        "category": "[parameters('existingAiKind')]",
+        "target": "[reference('existingAiResource').endpoint]",
+        "authType": "AAD",
+        "metadata": {
+          "ApiType": "Azure",
+          "ResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('existingAiResourceIdSubId'), variables('existingAiResourceIdRgName')), 'Microsoft.CognitiveServices/accounts', variables('existingAiResourceIdName'))]",
+          "location": "[reference('existingAiResource', '2023-05-01', 'full').location]"
+        }
+      },
+      "dependsOn": [
+        "existingAiResource",
+        "foundry_project"
+      ]
+    },
+    "project_connection_cosmosdb_account": {
+      "condition": "[not(empty(parameters('cosmosDBName')))]",
+      "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('foundry_name'), parameters('project_name'), format('{0}-for-{1}', parameters('cosmosDBName'), parameters('project_name')))]",
+      "properties": {
+        "category": "CosmosDB",
+        "target": "[reference('cosmosDBAccount').documentEndpoint]",
+        "authType": "AAD",
+        "metadata": {
+          "ApiType": "Azure",
+          "ResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('cosmosDBSubscriptionId'), parameters('cosmosDBResourceGroupName')), 'Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBName'))]",
+          "location": "[reference('cosmosDBAccount', '2024-12-01-preview', 'full').location]"
+        }
+      },
+      "dependsOn": [
+        "cosmosDBAccount",
+        "foundry_project"
+      ]
+    },
+    "project_connection_azure_storage": {
+      "condition": "[not(empty(parameters('azureStorageName')))]",
+      "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('foundry_name'), parameters('project_name'), format('{0}-for-{1}', parameters('azureStorageName'), parameters('project_name')))]",
+      "properties": {
+        "category": "AzureStorageAccount",
+        "target": "[reference('storageAccount').primaryEndpoints.blob]",
+        "authType": "AAD",
+        "metadata": {
+          "ApiType": "Azure",
+          "ResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('azureStorageSubscriptionId'), parameters('azureStorageResourceGroupName')), 'Microsoft.Storage/storageAccounts', parameters('azureStorageName'))]",
+          "location": "[reference('storageAccount', '2023-05-01', 'full').location]"
+        }
+      },
+      "dependsOn": [
+        "foundry_project",
+        "storageAccount"
+      ]
+    },
+    "project_connection_azureai_search": {
+      "condition": "[not(empty(parameters('aiSearchName')))]",
+      "type": "Microsoft.CognitiveServices/accounts/projects/connections",
+      "apiVersion": "2025-04-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('foundry_name'), parameters('project_name'), format('{0}-for-{1}', parameters('aiSearchName'), parameters('project_name')))]",
+      "properties": {
+        "category": "CognitiveSearch",
+        "target": "[format('https://{0}.search.windows.net', parameters('aiSearchName'))]",
+        "authType": "AAD",
+        "metadata": {
+          "ApiType": "Azure",
+          "ResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('aiSearchServiceSubscriptionId'), parameters('aiSearchServiceResourceGroupName')), 'Microsoft.Search/searchServices', parameters('aiSearchName'))]",
+          "location": "[reference('searchService', '2024-06-01-preview', 'full').location]"
+        }
+      },
+      "dependsOn": [
+        "foundry_project",
+        "searchService"
+      ]
+    }
+  },
+  "outputs": {
+    "project_name": {
+      "type": "string",
+      "value": "[parameters('project_name')]"
+    },
+    "project_id": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.CognitiveServices/accounts/projects', parameters('foundry_name'), parameters('project_name'))]"
+    },
+    "projectConnectionString": {
+      "type": "string",
+      "value": "[format('https://{0}.services.ai.azure.com/api/projects/{1}', parameters('foundry_name'), parameters('project_name'))]"
+    },
+    "isAiResourceValid": {
+      "type": "bool",
+      "value": "[if(or(empty(parameters('existingAiResourceId')), equals(reference('existingAiResource', '2023-05-01', 'full').location, parameters('location'))), true(), fail('The existing AIServices resource must be in the same region as the location parameter and must exist. See: https://github.com/azure-ai-foundry/foundry-samples/tree/main/samples/microsoft/infrastructure-setup/42-basic-agent-setup-with-customization and https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/use-your-own-resources'))]"
+    },
+    "cosmosDBConnection": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('cosmosDBName'))), format('{0}-for-{1}', parameters('cosmosDBName'), parameters('project_name')), '')]"
+    },
+    "capabilityHostName": {
+      "type": "string",
+      "value": ""
+    },
+    "azureStorageConnection": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('azureStorageName'))), format('{0}-for-{1}', parameters('azureStorageName'), parameters('project_name')), '')]"
+    },
+    "aiSearchConnection": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('aiSearchName'))), format('{0}-for-{1}', parameters('aiSearchName'), parameters('project_name')), '')]"
+    },
+    "aiFoundryConnectionName": {
+      "type": "string",
+      "value": "[if(empty(parameters('existingAiResourceId')), '', if(parameters('usingFoundryAiConnection'), variables('byoAiFoundryConnectionName'), variables('byoAiProjectConnectionName')))]"
+    },
+    "projectWorkspaceId": {
+      "type": "string",
+      "value": "[reference('foundry_project').internalId]"
+    },
+    "accountPrincipalId": {
+      "type": "string",
+      "value": "[if(empty(parameters('managedIdentityId')), reference('foundry_project', '2025-04-01-preview', 'full').identity.principalId, reference('identity').principalId)]"
+    }
+  }
+}

@@ -17,6 +17,11 @@ param sku object = {
 @description('Provide the IP address to allow access to the Azure Container Registry')
 param myIpAddress string = ''
 param managedIdentityId string = ''
+param playwrightWorkspaceId string = ''
+param playwrightWorkspaceName string = ''
+param playwrightLocation string = location
+@description('Logic Apps subnet ID to allow agent provisioning from Logic App workflows')
+param logicAppsSubnetId string = ''
 
 // --------------------------------------------------------------------------------------------------------------
 // Variables
@@ -56,6 +61,11 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-p
 }
 
 // --------------------------------------------------------------------------------------------------------------
+// Construct Playwright workspace endpoint using the Playwright-specific location
+var playwrightWorkspaceEndpoint = !empty(playwrightWorkspaceId)
+  ? 'wss://${playwrightLocation}.api.playwright.microsoft.com/playwrightworkspaces/${playwrightWorkspaceName}/browsers'
+  : ''
+
 resource existingAccount 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = if (useExistingService) {
   scope: resourceGroup(existing_CogServices_RG_Name, existing_CogServices_SubId)
   name: existing_CogServices_Name
@@ -92,7 +102,14 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = if 
               value: myIpAddress
             }
           ]
-      virtualNetworkRules: []
+      virtualNetworkRules: empty(logicAppsSubnetId)
+        ? []
+        : [
+            {
+              id: logicAppsSubnetId
+              ignoreMissingVnetServiceEndpoint: false
+            }
+          ]
     }
     networkInjections: (!empty(agentSubnetId)
       ? [
@@ -126,6 +143,15 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = if 
       }
     }
   }
+
+  // NOTE: Bing connection moved to project-level (ai-project.bicep)
+  // Reason: client.connections.list() only returns project-level connections
+  // Account-level connections with isSharedToAll=true are not visible to the SDK
+
+  // NOTE: Playwright connection moved to post-deployment script
+  // Reason: Requires Entra ID access token that can't be generated in Bicep
+  // Post-deployment script uses: az account get-access-token + REST API to create connection
+  // See: infra/scripts/add-playwright-connection.sh
 }
 
 @batchSize(1)

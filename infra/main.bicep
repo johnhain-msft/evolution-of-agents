@@ -7,8 +7,12 @@ targetScope = 'resourceGroup'
 
 param location string = resourceGroup().location
 param myIpAddress string = ''
+// Playwright is only available in limited regions: eastus, westus3, westeurope, eastasia
+// Default to eastasia (closest to Japan regions)
+param playwrightLocation string = 'eastasia'
 
 var resourceToken = toLower(uniqueString(resourceGroup().id, location))
+var vnetAddressSpace = '192.168.0.0/16' // Must match vnet.bicep default
 
 module identity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
   name: 'mgmtidentity-${uniqueString(deployment().name, location)}'
@@ -36,14 +40,9 @@ module ai_dependencies './modules/ai/ai-dependencies-with-dns.bicep' = {
     resourceToken: resourceToken
     aiServicesName: '' // create AI serviced PE later
     aiAccountNameResourceGroupName: ''
-    existingDnsZones: {
-      //disable-next-line no-hardcoded-env-urls
-      'privatelink.blob.${environment().suffixes.storage}': {
-        name: 'privatelink.blob.${environment().suffixes.storage}'
-        resourceGroupName: resourceGroup().name
-        subscriptionId: subscription().subscriptionId
-      }
-    }
+    // Use default existingDnsZones (types.DefaultDNSZones = all null)
+    // This creates DNS zones in the current resource group on fresh deployments
+    // For hub-spoke: pass existingDnsZones with hub RG name to reference pre-existing zones
   }
 }
 
@@ -59,6 +58,44 @@ module logAnalytics './modules/monitor/loganalytics.bicep' = {
   }
 }
 
+// Bing Grounding Resource for web search
+resource bingAccount 'Microsoft.Bing/accounts@2025-05-01-preview' = {
+  name: 'bing-grounding-${resourceToken}'
+  location: 'global'
+  kind: 'Bing.Grounding'
+  sku: {
+    name: 'G1'
+  }
+  properties: {}
+}
+
+// Playwright Workspaces for browser automation (Microsoft.LoadTestService)
+// Note: Available regions: eastus, westus3, eastasia, westeurope
+// Microsoft.AzurePlaywrightService is deprecated (retires 2026-03-08)
+resource playwrightWorkspace 'Microsoft.LoadTestService/playwrightWorkspaces@2025-09-01' = {
+  name: 'pw-${resourceToken}'
+  location: playwrightLocation
+  properties: {
+    regionalAffinity: 'Enabled'
+    localAuth: 'Enabled'
+  }
+}
+
+// Role assignment for AI Foundry to access Playwright workspace
+// ⚠️  WARNING: FOR DEMO/DEVELOPMENT PURPOSES ONLY
+// This assigns the Contributor role, which grants full management access to the Playwright workspace.
+// Production environments should follow least privilege principle by using a custom role with only:
+//   - Microsoft.LoadTestService/PlaywrightWorkspaces/write
+resource playwrightRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(subscription().subscriptionId, resourceGroup().id, playwrightWorkspace.name, 'Contributor')
+  scope: playwrightWorkspace
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c') // Contributor role
+    principalId: identity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 module foundry './modules/ai/ai-foundry.bicep' = {
   name: 'foundry-deployment'
   params: {
@@ -68,16 +105,24 @@ module foundry './modules/ai/ai-foundry.bicep' = {
     appInsightsName: logAnalytics.outputs.applicationInsightsName
     publicNetworkAccess: 'Enabled'
     agentSubnetId: vnet.outputs.agentSubnetId // Use the first agent subnet
+    logicAppsSubnetId: vnet.outputs.logicAppsSubnetId // Allow Logic Apps to create agents
     myIpAddress: myIpAddress
+    playwrightWorkspaceId: playwrightWorkspace.id
+    playwrightWorkspaceName: playwrightWorkspace.name
+    playwrightLocation: playwrightLocation
     deployments: [
       {
-        name: 'gpt-35-turbo'
+        name: 'gpt-4o'
         properties: {
           model: {
             format: 'OpenAI'
-            name: 'gpt-35-turbo'
-            version: '0125'
+            name: 'gpt-4o'
+            version: '2024-11-20'
           }
+        }
+        sku: {
+          name: 'GlobalStandard'
+          capacity: 20
         }
       }
       {
@@ -120,6 +165,39 @@ module project1 './modules/ai/ai-project-with-caphost.bicep' = {
     projectId: 1
     aiDependencies: ai_dependencies.outputs.aiDependencies
     managedIdentityId: identity.outputs.resourceId
+    bingAccountId: bingAccount.id
+    bingAccountEndpoint: bingAccount.properties.endpoint
+    resourceToken: resourceToken
+  }
+}
+
+// Grant Logic App managed identity access to AI Foundry project
+// Required for Agent action in workflows (AutonomousAgent) to create agents
+module logicAppAiFoundryRoleAssignment './modules/iam/role-assignment-foundryProject.bicep' = {
+  name: 'logic-app-ai-foundry-role-assignment'
+  params: {
+    accountName: foundry.outputs.name
+    projectName: project1.outputs.projectName
+    projectPrincipalId: logicAppsDeployment.outputs.logicAppSystemAssignedPrincipalId
+    roleName: 'Azure AI Project Manager'
+    servicePrincipalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    project1
+    logicAppsDeployment
+  ]
+}
+
+// Office 365 connection for Logic Apps
+// Uses user-assigned managed identity for access policy (Logic App has both system and user-assigned)
+// Agent connections require system-assigned, but Office365 connection works with user-assigned
+// Connection name: office365v2 (V2 kind to support connectionRuntimeUrl)
+module office365Connection './modules/function/office365-connection.bicep' = {
+  name: 'office365-connection'
+  params: {
+    location: location
+    connectionName: 'office365v2'
+    logicAppPrincipalId: identity.outputs.principalId
   }
 }
 
@@ -133,10 +211,16 @@ module logicAppsDeployment './modules/function/function-app-with-plan.bicep' = {
     logAnalyticsWorkspaceResourceId: logAnalytics.outputs.logAnalyticsWorkspaceId
     applicationInsightResourceId: logAnalytics.outputs.applicationInsightsId
     virtualNetworkResourceId: vnet.outputs.virtualNetworkId
+    vnetAddressSpace: vnetAddressSpace
     logicAppsSubnetResourceId: vnet.outputs.logicAppsSubnetId
     privateEndpointSubnetResourceId: vnet.outputs.peSubnetId
     logicAppPrivateDnsZoneId: dnsSites.outputs.resourceId
     myIpAddress: myIpAddress
+    office365ConnectionRuntimeUrl: office365Connection.outputs.connectionRuntimeUrl
+    aiProjectEndpoint: project1.outputs.foundry_connection_string
+    aiFoundryName: foundry.outputs.name
+    aiProjectName: project1.outputs.projectName
+    existingDnsZones: ai_dependencies.outputs.DNSZones
     tags: {
       Environment: 'Production'
       Project: 'EvolutionOfAgents'
