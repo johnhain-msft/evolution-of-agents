@@ -19,7 +19,8 @@
                         "$top": "@{coalesce(triggerBody()?['maxResults'], 10)}"
                     }
                 },
-                "runAfter": {}
+                "runAfter": {},
+                "operationId": "GetEventsCalendarViewV3"
             },
             "Response": {
                 "type": "Response",

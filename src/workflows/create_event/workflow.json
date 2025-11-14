@@ -22,7 +22,8 @@
                         "attendees": "@{triggerBody()?['attendees']}"
                     }
                 },
-                "runAfter": {}
+                "runAfter": {},
+                "operationId": "V4CalendarPostItem"
             },
             "Response": {
                 "type": "Response",
