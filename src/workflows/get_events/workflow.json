@@ -25,7 +25,7 @@
                         }
                     },
                     "method": "get",
-                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(first(body('Get_calendars')?['value'])?['Name']))}/items",
+                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(first(where(body('Get_calendars')?['value'], item => item['DisplayName'] == 'Calendar'))?['Name']))}/items",
                     "queries": {
                         "$filter": "start/dateTime ge '@{triggerBody()?['startDateTime']}' and end/dateTime le '@{triggerBody()?['endDateTime']}'",
                         "$orderby": "start/dateTime",
