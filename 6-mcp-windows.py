@@ -8,17 +8,6 @@ prompts, resources like files/DBs) over JSON-RPC transports (e.g., stdio, WebSoc
 
 This script demonstrates how agents can interact with external MCP servers using
 Playwright to browse websites and extract information.
-
-⚠️  IMPORTANT - Playwright Connection Token Expiration:
-The Playwright connection uses an access token that expires after ~75 minutes.
-If you're running this script more than an hour after deployment (or days later),
-you may need to refresh the connection by running:
-    .\infra\scripts\add-playwright-connection.ps1
-
-If you see authentication or connection errors, run the script above for a fresh token.
-
-Usage:
-    python 6-mcp-windows.py
 """
 
 import asyncio

@@ -136,7 +136,7 @@ module foundry './modules/ai/ai-foundry.bicep' = {
         }
         sku: {
           name: 'GlobalStandard'
-          capacity: 20
+          capacity: 150
         }
       }
       {
