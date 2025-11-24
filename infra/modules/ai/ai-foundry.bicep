@@ -143,15 +143,6 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = if 
       }
     }
   }
-
-  // NOTE: Bing connection moved to project-level (ai-project.bicep)
-  // Reason: client.connections.list() only returns project-level connections
-  // Account-level connections with isSharedToAll=true are not visible to the SDK
-
-  // NOTE: Playwright connection moved to post-deployment script
-  // Reason: Requires Entra ID access token that can't be generated in Bicep
-  // Post-deployment script uses: az account get-access-token + REST API to create connection
-  // See: infra/scripts/add-playwright-connection.sh
 }
 
 @batchSize(1)

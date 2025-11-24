@@ -343,20 +343,6 @@ npm install @playwright/mcp
 
 **Note**: Use the provided `6-mcp-windows.py` script instead of the notebook, as it correctly passes environment variables to the MCP subprocess.
 
-**Important - Playwright Connection Token Expiration:**
-
-The Playwright connection uses an access token that expires after ~75 minutes. If you run Notebook 6 more than an hour after deployment (or days later), you'll need to refresh the connection:
-
-```powershell
-# Windows
-.\infra\scripts\add-playwright-connection.ps1
-
-# Linux/Mac
-./infra/scripts/add-playwright-connection.sh
-```
-
-This script updates the connection with a fresh token. You'll know you need to refresh if Notebook 6 fails with authentication or connection errors when using Playwright.
-
 ### Step 8: Select Jupyter Kernel in VS Code
 
 To run the notebooks in VS Code, you need to select the correct Python interpreter from your virtual environment:
@@ -541,7 +527,7 @@ If any are missing, the Bicep deployment may need to be re-run.
 
 #### Playwright Connection Expired
 
-If Notebook 6 fails with authentication errors when using Playwright (especially if running more than ~75 minutes after deployment), the access token has expired. Refresh it by running:
+If Notebook 7 fails with authentication errors when using Playwright (especially if running more than ~75 minutes after deployment), the access token has expired. Refresh it by running:
 
 ```bash
 # Linux/Mac
@@ -551,7 +537,7 @@ If Notebook 6 fails with authentication errors when using Playwright (especially
 .\infra\scripts\add-playwright-connection.ps1
 ```
 
-This updates the connection with a fresh token. You may need to do this each time you work with Notebook 6 if significant time has passed since your last run.
+This updates the connection with a fresh token. You may need to do this each time you work with Notebook 7 if significant time has passed since your last run.
 
 ### Cleanup and Retry
 

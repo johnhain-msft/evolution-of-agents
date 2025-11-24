@@ -64,8 +64,7 @@ class AzureStandardLogicAppTool:
         """
         Generate an OpenAPI spec matching the provided Logic App schema example.
 
-        Note: The server_url should include all required query parameters (api-version, sp, sv)
-        except for 'sig' which is handled via the security scheme.
+        Note: The server_url should include all required query parameters (api-version, sp, sv, sig)
         """
         # Extract properties and required fields
         properties = {}

@@ -133,15 +133,6 @@ resource byoAoaiConnection 'Microsoft.CognitiveServices/accounts/projects/connec
   }
 }
 
-// Account-level CapabilityHost removed to prevent 409 Conflict on deployment retry
-// Account-level CapabilityHost is optional - project-level CapabilityHost (created in add-project-capability-host.bicep)
-// has higher priority and provides all necessary configuration
-// Reference: https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/capability-hosts
-//
-// Issue: CapabilityHost resources are NOT idempotent by design. If Azure retries the deployment
-// for any reason, it attempts to recreate the CapabilityHost, which fails with 409 Conflict.
-// Solution: Only create project-level CapabilityHost, which is sufficient for all scenarios.
-
 resource project_connection_cosmosdb_account 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(cosmosDBName)) {
   name: '${cosmosDBName}-for-${project_name}'
   parent: foundry_project
@@ -187,16 +178,6 @@ resource project_connection_azureai_search 'Microsoft.CognitiveServices/accounts
   }
 }
 
-// Project-level Bing connection for web research (moved from account level)
-// client.connections.list() only returns project-level connections
-// FIXED: Connection name uses resourceToken to match Azure's auto-generated format
-// Azure rejects 'binggrounding-for-${project_name}' and auto-generates 'binggrounding${resourceToken}'
-//
-// WORKAROUND: Using 'CustomKeys' category instead of 'BingLLMSearch'
-// Reason: BingLLMSearch has a known bug where connections created via Bicep aren't properly
-// registered in the project's connection index, causing "connection not found" errors
-// See: https://github.com/Azure/azure-sdk-for-python/issues/41768
-// Microsoft's recommended workaround uses CustomKeys with Bing API endpoint
 resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
   name: 'binggrounding${resourceToken}'
   parent: foundry_project
@@ -223,7 +204,7 @@ output isAiResourceValid bool = isAiResourceValid
 
 // return the BYO connection names
 output cosmosDBConnection string = !empty(cosmosDBName) ? project_connection_cosmosdb_account.name : ''
-output capabilityHostName string = '' // Account-level CapabilityHost no longer created (see comment above)
+output capabilityHostName string = ''
 output azureStorageConnection string = !empty(azureStorageName) ? project_connection_azure_storage.name : ''
 output aiSearchConnection string = !empty(aiSearchName) ? project_connection_azureai_search.name : ''
 output aiFoundryConnectionName string = empty(existingAiResourceId)

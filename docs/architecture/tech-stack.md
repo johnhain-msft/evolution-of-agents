@@ -76,7 +76,7 @@ uv lock          # Update lock file
 **Model Deployments**:
 | Model | Version | Deployment Name | SKU | Notebooks |
 |-------|---------|-----------------|-----|-----------|
-| GPT-3.5-turbo | 0125 | `gpt-35-turbo` | Standard | 1-4 |
+| GPT-4o | 2024-11-20 | `gpt-4o` | Standard | 1-4 |
 | GPT-4.1 | 2025-04-14 | `gpt-4.1` | GlobalStandard (20 capacity) | 5-7 (primary) |
 | GPT-5-mini | 2025-08-07 | `gpt-5-mini` | GlobalStandard (20 capacity) | 7 (optional) |
 
@@ -362,7 +362,7 @@ USE_AZURE_DEV_CLI=true  # Use AzureDeveloperCliCredential instead of DefaultAzur
 
 ### LLM Inference
 
-- **Model Size Impact**: GPT-4.1 slower than GPT-3.5-turbo, but higher quality
+- **Model Size Impact**: GPT-4.1 slower than GPT-4o, but higher quality
 - **GlobalStandard SKU**: Provides global load balancing and better availability
 - **Capacity**: 20 TPM (Tokens Per Minute) configured for GPT-4.1 and GPT-5-mini
 

@@ -268,8 +268,6 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
             FUNCTIONS_EXTENSION_VERSION: '~4'
             FUNCTIONS_WORKER_RUNTIME: 'dotnet'
             APP_KIND: 'workflowApp'
-            // https://review.learn.microsoft.com/en-us/azure/logic-apps/create-single-tenant-workflows-azure-portal?branch=main&branchFallbackFrom=pr-en-us-279972#set-up-managed-identity-access-to-your-storage-account
-            // AZURE_CLIENT_ID removed - when not set, defaults to system-assigned identity (required for agent connections)
             // Storage explicitly uses user-assigned via AzureWebJobsStorage__clientId and __managedIdentityResourceId
             AzureWebJobsStorage__credential: 'managedIdentity'
             AzureWebJobsStorage__credentialType: 'managedIdentity'
@@ -287,7 +285,7 @@ module logicApp 'br/public:avm/res/web/site:0.19.4' = {
             AI_PROJECT_ENDPOINT: aiProjectEndpoint
             AI_FOUNDRY_NAME: aiFoundryName
             AI_PROJECT_NAME: aiProjectName
-            AZURE_CLIENT_ID: '' // Empty string explicitly specifies system-assigned identity for agent connections
+            AZURE_CLIENT_ID: '' // Empty string explicitly specifies system-assigned identity for agent connections. when not set, defaults to system-assigned identity (required for agent connections)
           }
           storageAccountResourceId: storageAccount.outputs.resourceId
           storageAccountUseIdentityAuthentication: true
