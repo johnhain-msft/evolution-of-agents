@@ -60,7 +60,6 @@ hooks:
       shell: sh
       run: |
         ./scripts/populate_env.sh
-        chmod +x ./infra/scripts/add-playwright-connection.sh
         ./infra/scripts/add-playwright-connection.sh
       interactive: false
       continueOnError: false
