@@ -144,8 +144,8 @@ Before starting, ensure you have the following tools installed:
 ### What Gets Deployed
 
 The `azd up` command automatically provisions:
-- ✅ Azure AI Foundry Hub with AI Project
-- ✅ GPT-3.5-turbo, GPT-4.1, and GPT-5-mini deployments
+- ✅ Azure AI Foundry with AI Project
+- ✅ GPT-4o, GPT-4.1, and GPT-5-mini deployments
 - ✅ Bing grounding connection for web research (notebook 7)
 - ✅ Playwright browser automation connection (notebook 7)
 - ✅ Azure Logic Apps Standard with 4 workflows (notebook 7):
@@ -319,8 +319,8 @@ azd up
 - ✨ **Automatically creates and populates your `.env` file** (no manual steps!)
 
 The deployment provisions:
-- Azure AI Foundry hub and project
-- GPT-3.5-turbo, GPT-4.1, and GPT-5-mini deployments
+- Azure AI Foundry and project
+- GPT-4o, GPT-4.1, and GPT-5-mini deployments
 - Bing grounding and Playwright browser automation connections
 - Azure Logic Apps Standard with 4 workflows
 - Networking resources (VNet, subnets, private endpoints)
@@ -523,7 +523,7 @@ Check all resources were created:
 # List all resources in the deployment
 az resource list --resource-group <your-rg-name> --output table
 
-# Verify AI Foundry hub
+# Verify AI Foundry
 az cognitiveservices account list --resource-group <your-rg-name> --output table
 
 # Verify Logic Apps workflows

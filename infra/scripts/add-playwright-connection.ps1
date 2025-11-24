@@ -13,7 +13,7 @@
 # Prerequisites:
 # - Azure CLI logged in
 # - Contributor/Owner role on Playwright workspace (already assigned in Bicep)
-# - AI Foundry hub and Playwright workspace deployed
+# - AI Foundry and Playwright workspace deployed
 
 Write-Host "Adding Playwright connection to AI Foundry..." -ForegroundColor Cyan
 
@@ -23,15 +23,15 @@ $subscriptionId = if ($env:AZURE_AI_FOUNDRY_SUBSCRIPTION_ID) { $env:AZURE_AI_FOU
 # Get location from resource group since it's not in outputs
 $location = az group show --name $resourceGroup --query location -o tsv
 
-# Get AI Foundry hub name from environment
+# Get AI Foundry name from environment
 $aiFoundryName = if ($env:AZURE_AI_FOUNDRY_NAME) { $env:AZURE_AI_FOUNDRY_NAME } else { azd env get-value AZURE_AI_FOUNDRY_NAME }
 
 if ([string]::IsNullOrEmpty($aiFoundryName)) {
-  Write-Error "AI Foundry hub name not found in environment (AZURE_AI_FOUNDRY_NAME)"
+  Write-Error "AI Foundry name not found in environment (AZURE_AI_FOUNDRY_NAME)"
   exit 1
 }
 
-Write-Host "Found AI Foundry hub: $aiFoundryName" -ForegroundColor Green
+Write-Host "Found AI Foundry: $aiFoundryName" -ForegroundColor Green
 
 # Get Playwright workspace details
 $playwrightWorkspace = az resource list `

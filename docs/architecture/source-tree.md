@@ -216,7 +216,7 @@ infra/
 ├── main.bicepparam              # Bicep parameters file
 └── modules/                     # Bicep modules
     ├── ai/
-    │   ├── ai-foundry.bicep                  # AI Foundry hub
+    │   ├── ai-foundry.bicep                  # AI Foundry
     │   ├── ai-project-with-caphost.bicep     # AI project
     │   └── ai-dependencies-with-dns.bicep    # Storage, search, DNS
     ├── ai-dependencies/         # Additional AI dependencies

@@ -16,7 +16,7 @@ set -e
 # Prerequisites:
 # - Azure CLI logged in
 # - Contributor/Owner role on Playwright workspace (already assigned in Bicep)
-# - AI Foundry hub and Playwright workspace deployed
+# - AI Foundry and Playwright workspace deployed
 
 echo "Adding Playwright connection to AI Foundry..."
 
@@ -26,15 +26,15 @@ SUBSCRIPTION_ID="${AZURE_AI_FOUNDRY_SUBSCRIPTION_ID:-$(azd env get-value AZURE_A
 # Get location from resource group since it's not in outputs
 LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
 
-# Get AI Foundry hub name from environment
+# Get AI Foundry name from environment
 AI_FOUNDRY_NAME="${AZURE_AI_FOUNDRY_NAME:-$(azd env get-value AZURE_AI_FOUNDRY_NAME)}"
 
 if [ -z "$AI_FOUNDRY_NAME" ]; then
-  echo "ERROR: AI Foundry hub name not found in environment (AZURE_AI_FOUNDRY_NAME)"
+  echo "ERROR: AI Foundry name not found in environment (AZURE_AI_FOUNDRY_NAME)"
   exit 1
 fi
 
-echo "Found AI Foundry hub: $AI_FOUNDRY_NAME"
+echo "Found AI Foundry: $AI_FOUNDRY_NAME"
 
 # Get Playwright workspace details
 PLAYWRIGHT_WORKSPACE=$(az resource list \

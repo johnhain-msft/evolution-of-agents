@@ -70,7 +70,7 @@ uv lock          # Update lock file
 | Service | Purpose | Configuration | Notebooks |
 |---------|---------|---------------|-----------|
 | **Microsoft Foundry** | Central AI resource management | Deployed via fixed Bicep | All |
-| **Azure AI Foundry (Project)** | Agent workspace and orchestration | Child resource of Hub | All |
+| **Azure AI Foundry (Project)** | Agent workspace and orchestration | Child resource | All |
 | **Azure OpenAI Service** | LLM hosting and inference | GPT deployments within Foundry | All |
 
 **Model Deployments**:
@@ -158,7 +158,7 @@ SEMANTICKERNEL_EXPERIMENTAL_GENAI_ENABLE_OTEL_DIAGNOSTICS_SENSITIVE=true
 
 **Bicep Modules**:
 - `/infra/modules/networking/vnet.bicep`: Virtual network configuration
-- `/infra/modules/ai/ai-foundry.bicep`: AI Foundry hub deployment
+- `/infra/modules/ai/ai-foundry.bicep`: AI Foundry deployment
 - `/infra/modules/ai/ai-project-with-caphost.bicep`: AI project with capability hosts
 - `/infra/modules/ai/ai-dependencies-with-dns.bicep`: Storage, search, DNS setup
 - `/infra/modules/function/function-app-with-plan.bicep`: Logic Apps deployment
@@ -292,7 +292,7 @@ Defined in `.env.example`, populated in `.env`:
 | `AZURE_AI_FOUNDRY_CONNECTION_STRING` | Foundry endpoint URL | `https://<resource>.services.ai.azure.com/api/projects/<project>` | Infrastructure output |
 | `AZURE_AI_FOUNDRY_SUBSCRIPTION_ID` | Azure subscription ID | `00000000-0000-0000-0000-000000000000` | Infrastructure output |
 | `AZURE_AI_FOUNDRY_RESOURCE_GROUP` | Resource group name | `rg-agents-dev` | Infrastructure output |
-| `AZURE_AI_FOUNDRY_NAME` | Foundry hub name | `ai-foundry-abc123` | Infrastructure output |
+| `AZURE_AI_FOUNDRY_NAME` | Foundry name | `ai-foundry-abc123` | Infrastructure output |
 | `AZURE_AI_FOUNDRY_PROJECT_NAME` | Project name | `agents-project-1` | Infrastructure output |
 | `AZURE_TENANT_ID` | Azure AD tenant ID | `00000000-0000-0000-0000-000000000000` | Infrastructure output |
 | `LOGIC_APP_SUBSCRIPTION_ID` | Logic App subscription | Same as above or different | Infrastructure output |

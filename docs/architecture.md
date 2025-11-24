@@ -213,7 +213,7 @@ User can immediately: uv sync → select kernel → run notebooks
 
 **Bicep Module Areas Requiring Fixes**:
 - `/infra/modules/networking/`: VNet configuration, subnet delegation, private DNS zones
-- `/infra/modules/ai/`: AI Foundry hub, project configuration, model deployments, Bing/Playwright connections
+- `/infra/modules/ai/`: AI Foundry, project configuration, model deployments, Bing/Playwright connections
 - `/infra/modules/function/`: Logic App Standard deployment, workflow definitions, Office 365 connections
 - `/infra/modules/monitor/`: Log Analytics, Application Insights integration
 - `/infra/main.bicep`: Orchestration, parameter passing, output definitions

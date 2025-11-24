@@ -42,7 +42,7 @@ module ai_dependencies './modules/ai/ai-dependencies-with-dns.bicep' = {
     aiAccountNameResourceGroupName: ''
     // Use default existingDnsZones (types.DefaultDNSZones = all null)
     // This creates DNS zones in the current resource group on fresh deployments
-    // For hub-spoke: pass existingDnsZones with hub RG name to reference pre-existing zones
+    // For hub-spoke: pass existingDnsZones with RG name to reference pre-existing zones
   }
 }
 
