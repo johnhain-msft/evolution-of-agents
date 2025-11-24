@@ -69,7 +69,7 @@ uv lock          # Update lock file
 
 | Service | Purpose | Configuration | Notebooks |
 |---------|---------|---------------|-----------|
-| **Azure AI Foundry (Hub)** | Central AI resource management | Deployed via fixed Bicep | All |
+| **Microsoft Foundry** | Central AI resource management | Deployed via fixed Bicep | All |
 | **Azure AI Foundry (Project)** | Agent workspace and orchestration | Child resource of Hub | All |
 | **Azure OpenAI Service** | LLM hosting and inference | GPT deployments within Foundry | All |
 
