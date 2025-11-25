@@ -340,7 +340,7 @@ resource agentSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' = {
 ### Bash Scripts (Linux/Mac)
 
 **File Naming**: `snake_case.sh`
-- Example: `populate_env.sh`, `setup_local.sh`
+- Example: `populate_env.sh`
 
 **Shebang and Error Handling**:
 ```bash
@@ -373,7 +373,7 @@ echo ".env file created successfully!"
 ### PowerShell Scripts (Windows)
 
 **File Naming**: `snake_case.ps1`
-- Example: `populate_env.ps1`, `setup_local.ps1`
+- Example: `populate_env.ps1`
 
 **Error Handling and Output**:
 ```powershell

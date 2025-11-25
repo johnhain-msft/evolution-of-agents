@@ -433,19 +433,7 @@ Windows PowerShell:
 .\scripts\populate_env.ps1
 ```
 
-**Option 2: Use the legacy script**
-
-Linux/Mac:
-```bash
-./scripts/setup_local.sh
-```
-
-Windows PowerShell:
-```powershell
-.\scripts\setup_local.ps1
-```
-
-**Option 3: Create .env manually**
+**Option 2: Create .env manually**
 ```bash
 # View deployment outputs
 azd env get-values

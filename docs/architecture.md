@@ -22,7 +22,7 @@ This document supplements the existing project structure by defining how new doc
 - pyproject.toml defining Python dependencies and project metadata
 - .env.example showing required environment variables
 - Bicep infrastructure modules in `/infra` directory
-- Setup scripts: `setup_local.sh` (bash) and minimal `setup_local.ps1` (PowerShell)
+- Setup scripts: `populate_env.sh` (bash) and `populate_env.ps1` (PowerShell)
 
 #### Identified Constraints
 
@@ -334,8 +334,8 @@ evolution-of-agents/
 │   ├── main.bicepparam
 │   └── modules/                # Bicep modules for resources
 ├── scripts/
-│   ├── setup_local.sh          # Bash setup script (UNCHANGED)
-│   └── setup_local.ps1         # PowerShell setup script (minimal, can be referenced)
+│   ├── populate_env.sh         # Automated .env creation (bash)
+│   └── populate_env.ps1        # Automated .env creation (PowerShell)
 ├── src/                         # Additional source (workflow definitions for Logic Apps)
 │   └── workflows/
 └── images/                      # Visual assets for README
@@ -366,11 +366,9 @@ evolution-of-agents/
 │       ├── ai/                         # FIXED - AI Foundry, connections
 │       ├── function/                   # FIXED - Logic Apps, workflows
 │       └── monitor/                    # FIXED - Logging configuration
-├── scripts/                            # ENHANCED - Automation scripts added
-│   ├── setup_local.sh                  # UNCHANGED - Existing bash script
-│   ├── setup_local.ps1                 # UNCHANGED - Existing PowerShell script
-│   ├── populate_env.sh                 # NEW - Automated .env creation (bash)
-│   └── populate_env.ps1                # NEW - Automated .env creation (PowerShell)
+├── scripts/
+│   ├── populate_env.sh                 # Automated .env creation (bash)
+│   └── populate_env.ps1                # Automated .env creation (PowerShell)
 ├── (all other existing files)          # UNCHANGED
 ```
 
@@ -559,7 +557,7 @@ evolution-of-agents/
 - All 7 notebooks run successfully on Linux after Bicep fixes
 - All 7 notebooks run successfully on Mac after Bicep fixes
 - Enhanced Bicep deployment works in clean subscriptions
-- Existing `setup_local.sh` still works (not replaced, supplemented)
+- `populate_env.sh` works correctly for manual invocation
 
 **Automated Regression Suite**: None (manual testing)
 
