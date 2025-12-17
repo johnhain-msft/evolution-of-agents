@@ -25,7 +25,12 @@ param cosmosDBResourceGroupName string = ''
 param azureStorageName string = ''
 param azureStorageSubscriptionId string = ''
 param azureStorageResourceGroupName string = ''
+@description('Deprecated: Account-level CapabilityHost removed to prevent 409 Conflict. Kept for backwards compatibility.')
 param createHubCapabilityHost bool = false
+
+param bingAccountId string = ''
+param bingAccountEndpoint string = ''
+param resourceToken string
 
 // --------------------------------------------------------------------------------------------------------------
 // split managed identity resource ID to get the name
@@ -128,20 +133,6 @@ resource byoAoaiConnection 'Microsoft.CognitiveServices/accounts/projects/connec
   }
 }
 
-// TODO is caphost on account level needed? This sample doesn't use it
-// https://github.com/azure-ai-foundry/foundry-samples/blob/main/samples/microsoft/infrastructure-setup/15-private-network-standard-agent-setup/README.md
-
-resource accountCapabilityHost 'Microsoft.CognitiveServices/accounts/capabilityHosts@2025-04-01-preview' = if (createHubCapabilityHost) {
-  name: 'capHost'
-  parent: foundry
-  properties: {
-    capabilityHostKind: 'Agents'
-  }
-  dependsOn: [
-    foundry_project
-  ]
-}
-
 resource project_connection_cosmosdb_account 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(cosmosDBName)) {
   name: '${cosmosDBName}-for-${project_name}'
   parent: foundry_project
@@ -187,16 +178,35 @@ resource project_connection_azureai_search 'Microsoft.CognitiveServices/accounts
   }
 }
 
+resource project_connection_bing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (!empty(bingAccountId)) {
+  name: 'binggrounding${resourceToken}'
+  parent: foundry_project
+  properties: {
+    category: 'CustomKeys'
+    target: 'https://api.bing.microsoft.com/'
+    authType: 'ApiKey'
+    credentials: {
+      key: !empty(bingAccountId) ? listKeys(bingAccountId, '2025-05-01-preview').key1 : ''
+    }
+    metadata: {
+      ApiType: 'Azure'
+      ResourceId: bingAccountId
+      location: 'global'
+      Type: 'BingGrounding'
+    }
+  }
+}
+
 output project_name string = foundry_project.name
 output project_id string = foundry_project.id
 output projectConnectionString string = 'https://${foundry_name}.services.ai.azure.com/api/projects/${project_name}'
 output isAiResourceValid bool = isAiResourceValid
 
 // return the BYO connection names
-output cosmosDBConnection string = project_connection_cosmosdb_account.name
-output capabilityHostName string = accountCapabilityHost.name
-output azureStorageConnection string = project_connection_azure_storage.name
-output aiSearchConnection string = project_connection_azureai_search.name
+output cosmosDBConnection string = !empty(cosmosDBName) ? project_connection_cosmosdb_account.name : ''
+output capabilityHostName string = ''
+output azureStorageConnection string = !empty(azureStorageName) ? project_connection_azure_storage.name : ''
+output aiSearchConnection string = !empty(aiSearchName) ? project_connection_azureai_search.name : ''
 output aiFoundryConnectionName string = empty(existingAiResourceId)
   ? ''
   : usingFoundryAiConnection ? byoAiFoundryConnectionName : byoAiProjectConnectionName

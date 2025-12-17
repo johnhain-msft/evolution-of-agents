@@ -221,7 +221,7 @@ async def test_agent(
 ) -> AgentThread:
     """Test agent and ensure it completes all responses before returning."""
 
-    if agent is AzureAIAgent:
+    if isinstance(agent, AzureAIAgent):
         thread = thread or AzureAIAgentThread(client=client)
     else:
         thread = thread or ChatHistoryAgentThread()

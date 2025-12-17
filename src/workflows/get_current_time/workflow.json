@@ -1,0 +1,61 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Get_current_time": {
+                "type": "Compose",
+                "inputs": "@utcNow()",
+                "runAfter": {}
+            },
+            "Format_time": {
+                "type": "Compose",
+                "inputs": {
+                    "utcDateTime": "@{outputs('Get_current_time')}",
+                    "timestamp": "@{formatDateTime(outputs('Get_current_time'), 'yyyy-MM-ddTHH:mm:ss.fffZ')}",
+                    "date": "@{formatDateTime(outputs('Get_current_time'), 'yyyy-MM-dd')}",
+                    "time": "@{formatDateTime(outputs('Get_current_time'), 'HH:mm:ss')}",
+                    "timezone": "@{coalesce(triggerBody()?['timezone'], 'UTC')}",
+                    "localDateTime": "@{if(equals(coalesce(triggerBody()?['timezone'], 'UTC'), 'UTC'), formatDateTime(outputs('Get_current_time'), 'yyyy-MM-ddTHH:mm:ss.fffZ'), convertTimeZone(outputs('Get_current_time'), 'UTC', coalesce(triggerBody()?['timezone'], 'UTC')))}"
+                },
+                "runAfter": {
+                    "Get_current_time": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": "@outputs('Format_time')"
+                },
+                "runAfter": {
+                    "Format_time": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timezone": {
+                                "type": "string",
+                                "description": "Timezone identifier (e.g., 'Eastern Standard Time', 'Pacific Standard Time'). Defaults to UTC."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}

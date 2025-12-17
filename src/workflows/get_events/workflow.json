@@ -1,0 +1,90 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Get_calendars": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/calendars/tables"
+                },
+                "runAfter": {}
+            },
+            "Get_calendar_view": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(body('Get_calendars')?['value'][1]?['Name']))}/items",
+                    "queries": {
+                        "$filter": "start/dateTime ge '@{triggerBody()?['startDateTime']}' and end/dateTime le '@{triggerBody()?['endDateTime']}'",
+                        "$orderby": "start/dateTime",
+                        "$top": "@{coalesce(triggerBody()?['maxResults'], 10)}"
+                    }
+                },
+                "runAfter": {
+                    "Get_calendars": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                        "events": "@{body('Get_calendar_view')?['value']}",
+                        "count": "@{length(body('Get_calendar_view')?['value'])}"
+                    }
+                },
+                "runAfter": {
+                    "Get_calendar_view": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "startDateTime": {
+                                "type": "string",
+                                "description": "Start of time range (ISO 8601 format)"
+                            },
+                            "endDateTime": {
+                                "type": "string",
+                                "description": "End of time range (ISO 8601 format)"
+                            },
+                            "maxResults": {
+                                "type": "integer",
+                                "description": "Maximum number of events to return (default: 10)"
+                            }
+                        },
+                        "required": [
+                            "startDateTime",
+                            "endDateTime"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}

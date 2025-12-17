@@ -1,0 +1,112 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Get_calendars": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/calendars/tables"
+                },
+                "runAfter": {}
+            },
+            "Create_event": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/datasets/calendars/v4/tables/@{encodeURIComponent(encodeURIComponent(body('Get_calendars')?['value'][1]?['Name']))}/items",
+                    "body": {
+                        "subject": "@{triggerBody()?['subject']}",
+                        "start": "@{triggerBody()?['start']}",
+                        "end": "@{triggerBody()?['end']}",
+                        "timeZone": "@{coalesce(triggerBody()?['timeZone'], 'UTC')}",
+                        "body": "@{triggerBody()?['body']}",
+                        "location": "@{triggerBody()?['location']}",
+                        "attendees": "@{triggerBody()?['attendees']}"
+                    }
+                },
+                "runAfter": {
+                    "Get_calendars": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                        "status": "success",
+                        "eventId": "@{body('Create_event')?['id']}",
+                        "message": "Calendar event created successfully"
+                    }
+                },
+                "runAfter": {
+                    "Create_event": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "subject": {
+                                "type": "string",
+                                "description": "Event subject/title"
+                            },
+                            "start": {
+                                "type": "string",
+                                "description": "Event start time (ISO 8601 format)"
+                            },
+                            "end": {
+                                "type": "string",
+                                "description": "Event end time (ISO 8601 format)"
+                            },
+                            "timeZone": {
+                                "type": "string",
+                                "description": "Time zone for the event (default: UTC)"
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Event body/description"
+                            },
+                            "location": {
+                                "type": "string",
+                                "description": "Event location"
+                            },
+                            "attendees": {
+                                "type": "array",
+                                "description": "List of attendee email addresses"
+                            }
+                        },
+                        "required": [
+                            "subject",
+                            "start",
+                            "end"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}

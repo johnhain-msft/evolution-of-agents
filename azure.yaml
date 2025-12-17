@@ -46,16 +46,20 @@ hooks:
   postprovision:
     shell: pwsh
     run: |
-      
+
     continueOnError: false
     interactive: false
     windows:
       shell: pwsh
-      run:  ./scripts/setup_local.ps1;
+      run: |
+        ./scripts/populate_env.ps1
+        ./infra/scripts/add-playwright-connection.ps1
       interactive: false
       continueOnError: false
     posix:
       shell: sh
-      run: ./scripts/setup_local.sh;
+      run: |
+        ./scripts/populate_env.sh
+        ./infra/scripts/add-playwright-connection.sh
       interactive: false
       continueOnError: false

@@ -1,25 +1,19 @@
 {
-    "agentConnections": {
-        "agent": {
+    "agentConnections": {},
+    "functionConnections": {},
+    "managedApiConnections": {
+        "office365": {
+            "api": {
+                "id": "/subscriptions/@{appsetting('WORKFLOWS_SUBSCRIPTION_ID')}/providers/Microsoft.Web/locations/@{appsetting('WORKFLOWS_LOCATION_NAME')}/managedApis/office365"
+            },
+            "connection": {
+                "id": "/subscriptions/@{appsetting('WORKFLOWS_SUBSCRIPTION_ID')}/resourceGroups/@{appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')}/providers/Microsoft.Web/connections/office365v2"
+            },
+            "connectionRuntimeUrl": "@{appsetting('OFFICE365_CONNECTION_RUNTIME_URL')}",
             "authentication": {
                 "type": "ManagedServiceIdentity"
-            },
-            "displayName": "AI Foundry",
-            "endpoint": "@{appsetting('AI_PROJECT_ENDPOINT')}",
-            "resourceId": "/subscriptions/@{appsetting('WORKFLOWS_SUBSCRIPTION_ID')}/resourceGroups/@{appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')}/providers/Microsoft.CognitiveServices/accounts/@{appsetting('AI_FOUNDRY_NAME')}/projects/@{appsetting('AI_PROJECT_NAME')}",
-            "type": "FoundryAgentService"
-        },
-         "agent-1": {
-            "authentication": {
-                "type": "ManagedServiceIdentity"
-            },
-            "displayName": "Open AI",
-            "endpoint": "@{appsetting('AI_PROJECT_ENDPOINT')}",
-            "resourceId": "/subscriptions/@{appsetting('WORKFLOWS_SUBSCRIPTION_ID')}/resourceGroups/@{appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')}/providers/Microsoft.CognitiveServices/accounts/@{appsetting('AI_FOUNDRY_NAME')}",
-            "type": "model"
+            }
         }
     },
-    "functionConnections": {},
-    "managedApiConnections": {},
     "serviceProviderConnections": {}
 }

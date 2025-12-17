@@ -1,0 +1,89 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "actions": {
+            "Send_an_email": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/Mail",
+                    "body": {
+                        "To": "@{triggerBody()?['to']}",
+                        "Subject": "@{triggerBody()?['subject']}",
+                        "Body": "@{triggerBody()?['body']}",
+                        "Importance": "@{coalesce(triggerBody()?['importance'], 'Normal')}",
+                        "Cc": "@{triggerBody()?['cc']}",
+                        "Bcc": "@{triggerBody()?['bcc']}"
+                    }
+                },
+                "runAfter": {}
+            },
+            "Response": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                    "statusCode": 200,
+                    "body": {
+                        "status": "success",
+                        "message": "Email sent successfully"
+                    }
+                },
+                "runAfter": {
+                    "Send_an_email": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "to": {
+                                "type": "string",
+                                "description": "Recipient email address"
+                            },
+                            "subject": {
+                                "type": "string",
+                                "description": "Email subject"
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Email body (can be HTML)"
+                            },
+                            "importance": {
+                                "type": "string",
+                                "description": "Email importance (Low, Normal, High)"
+                            },
+                            "cc": {
+                                "type": "string",
+                                "description": "CC recipients (semicolon-separated)"
+                            },
+                            "bcc": {
+                                "type": "string",
+                                "description": "BCC recipients (semicolon-separated)"
+                            }
+                        },
+                        "required": [
+                            "to",
+                            "subject",
+                            "body"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}
