@@ -171,23 +171,6 @@ module project1 './modules/ai/ai-project-with-caphost.bicep' = {
   }
 }
 
-// Grant Logic App managed identity access to AI Foundry project
-// Required for Agent action in workflows (AutonomousAgent) to create agents
-module logicAppAiFoundryRoleAssignment './modules/iam/role-assignment-foundryProject.bicep' = {
-  name: 'logic-app-ai-foundry-role-assignment'
-  params: {
-    accountName: foundry.outputs.name
-    projectName: project1.outputs.projectName
-    projectPrincipalId: logicAppsDeployment.outputs.logicAppSystemAssignedPrincipalId
-    roleName: 'Azure AI Project Manager'
-    servicePrincipalType: 'ServicePrincipal'
-  }
-  dependsOn: [
-    project1
-    logicAppsDeployment
-  ]
-}
-
 // Office 365 connection for Logic Apps
 // Uses user-assigned managed identity for access policy (Logic App has both system and user-assigned)
 // Agent connections require system-assigned, but Office365 connection works with user-assigned
